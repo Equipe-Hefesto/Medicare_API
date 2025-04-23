@@ -7,14 +7,12 @@ namespace Medicare_API.Models
 {
     public class Parceiro
     {
-        public required int IdParceiro { get; set; } //PK
-        public required string NomeParceiro { get; set; }
-        public required string ApelidoParceiro { get; set; }
-        public required string CNPJParceiro { get; set; }
+        public int IdParceiro { get; set; }
+        public string Nome { get; set; } = null!;
+        public string Apelido { get; set; } = null!;
+        public string CNPJ { get; set; } = null!;
+        public string Status { get; set; } = null!;
 
-        // Relacionamento
-        [JsonIgnore]
-        public List<ParceiroUtilizador> ParceiroUtilizador { get; set; } = new();
+        public List<ParceiroUtilizador> ParceirosUtilizadores { get; set; } = new();
     }
-
 }

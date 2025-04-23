@@ -1,16 +1,13 @@
 using Medicare_API.Data;
 using Medicare_API.Models;
+using Medicare_API.Models.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
-namespace Medicare_API.Models
+namespace Medicare_API.Controllers
 {
     [Route("[controller]")]
-    [ApiController]
-    public class ParceiroController : ControllerBase
+    public class ParceiroController : Controller
     {
         private readonly DataContext _context;
 
@@ -19,122 +16,117 @@ namespace Medicare_API.Models
             _context = context;
         }
 
-        #region GetParceiros
-
+        #region GET
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Parceiro>>> GetParceiros()
+        public async Task<ActionResult<IEnumerable<Parceiro>>> GetAllParceiros()
         {
             try
             {
-                var parceirosList = await _context.Parceiros.ToListAsync();
-                if (parceirosList == null || parceirosList.Count == 0)
-                {
-                    return NotFound("Nenhum parceiro encontrado.");
-                }
+                var entidades = await _context.Parceiros.ToListAsync();
+                if (entidades == null || entidades.Count == 0)
+                    return NotFound();
 
-                return Ok(parceirosList);
+                return Ok(entidades);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Erro interno no servidor: {ex.Message}");
+                return StatusCode(500, $"Erro interno: {ex.Message}");
             }
         }
-
         #endregion
 
-        #region GetParceiro
-
+        #region GET {id}
         [HttpGet("{id}")]
         public async Task<ActionResult<Parceiro>> GetParceiro(int id)
         {
             try
             {
-                var parceiro = await _context.Parceiros.FindAsync(id);
-                if (parceiro == null)
-                {
-                    return NotFound($"Parceiro com o id {id} não encontrado.");
-                }
+                var entidade = await _context.Parceiros.FindAsync(id);
+                if (entidade == null)
+                    return NotFound();
 
-                return Ok(parceiro);
+                return Ok(entidade);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Erro interno no servidor: {ex.Message}");
+                return StatusCode(500, $"Erro interno: {ex.Message}");
             }
         }
-
         #endregion
 
-        #region PostParceiro
-
+        #region POST
         [HttpPost]
-        public async Task<ActionResult<Parceiro>> PostParceiro([FromBody] Parceiro parceiro)
+        public async Task<ActionResult> PostParceiro([FromBody] ParceiroCreateDTO dto)
         {
-            if (parceiro == null)
-            {
-                return BadRequest("Os dados do parceiro são obrigatórios.");
-            }
-
             try
             {
-                _context.Parceiros.Add(parceiro);
+                if (await _context.Parceiros.AnyAsync(p => p.CNPJ == dto.CNPJ))
+                {
+                    return BadRequest($"O CNPJ {dto.CNPJ} informado já existe.");
+                }
+
+
+                var ultimoId = await _context.Parceiros.OrderByDescending(x => x.IdParceiro).Select(x => x.IdParceiro).FirstOrDefaultAsync();
+
+                // Validações opcionais
+
+                var p = new Parceiro();
+                p.IdParceiro = ultimoId + 1;
+                p.CNPJ = dto.CNPJ;
+                p.Nome = dto.Nome;
+                p.Apelido = dto.Apelido;
+                p.Status = "A";
+
+                _context.Parceiros.Add(p);
                 await _context.SaveChangesAsync();
 
-                return CreatedAtAction(nameof(GetParceiro), new { id = parceiro.IdParceiro }, parceiro);
+                return CreatedAtAction(nameof(GetParceiro), new { id = p.IdParceiro }, p);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Erro interno no servidor: {ex.Message}");
+                return StatusCode(500, $"Erro ao criar item: {ex.Message}");
             }
         }
-
         #endregion
 
-        #region PutParceiro
-
+        #region PUT
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutParceiro(int id, [FromBody] Parceiro parceiro)
+        public async Task<ActionResult> PutParceiro(int id, [FromBody] ParceiroUpdateDTO dto)
         {
-            var parceiroExistente = await _context.Parceiros
-                    .FirstOrDefaultAsync(p => p.IdParceiro == id);
-
-
-                if (parceiroExistente == null)
-                {
-                    return NotFound($"Parceiro com o id {id} não encontrado.");
-                }
-
             try
             {
-                _context.Entry(parceiro).State = EntityState.Modified;
+                if (await _context.Parceiros.AnyAsync(x => x.IdParceiro == id))
+                    return NotFound($"O Parceiro com o ID {id} não foi encontrado.");
+
+
+                // Atualize os campos
+                var p = new Parceiro();
+                p.CNPJ = dto.CNPJ;
+                p.Nome = dto.Nome;
+                p.Apelido = dto.Apelido;
+                p.Status = "A";
+
+                _context.Parceiros.Update(p);
                 await _context.SaveChangesAsync();
 
                 return NoContent();
             }
-            catch (DbUpdateConcurrencyException ex)
-            {
-                return StatusCode(500, $"Erro de concorrência no servidor: {ex.Message}");
-            }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Erro interno no servidor: {ex.Message}");
+                return StatusCode(500, $"Erro ao atualizar item: {ex.Message}");
             }
         }
-
         #endregion
 
-        #region DeleteParceiro
-
+        #region DELETE
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteParceiro(int id)
+        public async Task<ActionResult> DeleteParceiro(int id)
         {
             try
             {
-                var parceiro = await _context.Parceiros.FindAsync(id);
+                var parceiro = await _context.Parceiros.FirstOrDefaultAsync(x => x.IdParceiro == id);
                 if (parceiro == null)
-                {
-                    return NotFound($"Parceiro com o id {id} não encontrado.");
-                }
+                    return NotFound($"O Parceiro com o ID {id} não foi encontrado.");
 
                 _context.Parceiros.Remove(parceiro);
                 await _context.SaveChangesAsync();
@@ -143,10 +135,11 @@ namespace Medicare_API.Models
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Erro interno no servidor: {ex.Message}");
+                return StatusCode(500, $"Erro ao deletar item: {ex.Message}");
             }
         }
-
         #endregion
+
+        
     }
 }

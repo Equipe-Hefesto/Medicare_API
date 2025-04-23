@@ -1,16 +1,13 @@
 using Medicare_API.Data;
 using Medicare_API.Models;
+using Medicare_API.Models.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
-namespace Medicare_API.Models
+namespace Medicare_API.Controllers
 {
     [Route("[controller]")]
-    [ApiController]
-    public class PromocaoController : ControllerBase
+    public class PromocaoController : Controller
     {
         private readonly DataContext _context;
 
@@ -19,176 +16,135 @@ namespace Medicare_API.Models
             _context = context;
         }
 
-        #region GetPromocoes
-
+        #region GET
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Promocao>>> GetPromocoes()
+        public async Task<ActionResult<IEnumerable<Promocao>>> GetAllPromocoes()
         {
             try
             {
                 var promocoes = await _context.Promocoes.ToListAsync();
                 if (promocoes == null || promocoes.Count == 0)
-                {
-                    return NotFound("Nenhuma promoção encontrada.");
-                }
+                    return NotFound();
 
                 return Ok(promocoes);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Erro interno no servidor: {ex.Message}");
+                return StatusCode(500, $"Erro interno: {ex.Message}");
             }
         }
-
         #endregion
 
-        #region GetPromocao
-
+        #region GET {id}
         [HttpGet("{id}")]
-        public async Task<ActionResult<Promocao>> GetPromocao(int id)
+        public async Task<ActionResult<Promocao>> GetPromocaoPorId(int id)
         {
             try
             {
                 var promocao = await _context.Promocoes.FindAsync(id);
                 if (promocao == null)
-                {
-                    return NotFound($"Promoção com o id {id} não encontrada.");
-                }
+                    return NotFound();
 
                 return Ok(promocao);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Erro interno no servidor: {ex.Message}");
+                return StatusCode(500, $"Erro interno: {ex.Message}");
             }
         }
-
         #endregion
 
-        #region PutPromocao
-
-        [HttpPut("{idPromocao}")]
-        public async Task<ActionResult<Promocao>> PutPromocao(int idPromocao, [FromBody] Promocao promocao)
-        {
-            if ( promocao.IdFormaPagamento == 0 || promocao.IdColaborador == 0 || promocao.IdRemedio == 0)
-            {
-                return BadRequest("Os Ids de Promoção, Forma de pagamento, Colaborador e Remédio são obrigatórios.");
-            }
-
-            try
-            {
-                var promocaoExistente = await _context.Promocoes
-                    .FirstOrDefaultAsync(p => p.IdPromocao == idPromocao);
-
-                if (promocaoExistente == null)
-                {
-                    return NotFound($"Promoção com o id {idPromocao} não encontrada.");
-                }
-
-                var formaPagamento = await _context.FormasPagamento
-                    .FirstOrDefaultAsync(f => f.IdFormaPagamento == promocao.IdFormaPagamento);
-
-                var colaborador = await _context.Utilizadores
-                    .FirstOrDefaultAsync(u => u.IdUtilizador == promocao.IdColaborador);
-
-                var remedio = await _context.Remedios
-                    .FirstOrDefaultAsync(r => r.IdRemedio == promocao.IdRemedio);
-
-                if (formaPagamento == null || colaborador == null || remedio == null)
-                {
-                    return BadRequest("Forma de pagamento, colaborador ou remédio não encontrados.");
-                }
-
-                promocaoExistente.IdFormaPagamento = promocao.IdFormaPagamento;
-                promocaoExistente.IdColaborador = promocao.IdColaborador;
-                promocaoExistente.IdRemedio = promocao.IdRemedio;
-                promocaoExistente.Descricao = promocao.Descricao;
-                promocaoExistente.DtInicio = promocao.DtInicio;
-                promocaoExistente.DtFim = promocao.DtFim;
-                promocaoExistente.Valor = promocao.Valor;
-
-                promocaoExistente.FormaPagamento = formaPagamento;
-                promocaoExistente.Colaborador = colaborador;
-                promocaoExistente.Remedio = remedio;
-
-                _context.Promocoes.Update(promocaoExistente);
-                await _context.SaveChangesAsync();
-
-                return Ok(promocaoExistente);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Erro interno no servidor: {ex.Message}");
-            }
-        }
-
-        #endregion
-
-        #region PostPromocao
-
+        #region POST
         [HttpPost]
-        public async Task<ActionResult<Promocao>> PostPromocao([FromBody] Promocao promocao)
+        public async Task<ActionResult> PostPromocao([FromBody] PromocaoCreateDTO dto)
         {
-            if (promocao.IdFormaPagamento == 0 || promocao.IdColaborador == 0 || promocao.IdRemedio == 0)
-            {
-                return BadRequest("Os Ids de Forma de pagamento, Colaborador e Remédio são obrigatórios.");
-            }
-
             try
             {
-                var formaPagamento = await _context.FormasPagamento
-                    .FirstOrDefaultAsync(f => f.IdFormaPagamento == promocao.IdFormaPagamento);
-
-                var colaborador = await _context.Utilizadores
-                    .FirstOrDefaultAsync(u => u.IdUtilizador == promocao.IdColaborador);
-
-                var remedio = await _context.Remedios
-                    .FirstOrDefaultAsync(r => r.IdRemedio == promocao.IdRemedio);
-
-                if (formaPagamento == null || colaborador == null || remedio == null)
+                if (await _context.Promocoes.AnyAsync(tu => tu.Descricao.ToLower() == dto.Descricao.ToLower()))
                 {
-                    return BadRequest("Forma de pagamento, colaborador ou remédio não encontrados.");
+                    return BadRequest($"A promoção {dto.Descricao} informada já existe.");
                 }
 
-                var novaPromocao = new Promocao(
-                    idFormaPagamento : promocao.IdFormaPagamento,
-                    idColaborador : promocao.IdColaborador,
-                    idRemedio : promocao.IdRemedio,
-                    descricao : promocao.Descricao,
-                    dtInicio  :  promocao.DtInicio,
-                    dtFim  : promocao.DtFim,
-                    valor  :  promocao.Valor
-                );
+                var remedio = await _context.Remedios.FirstOrDefaultAsync(r => r.IdRemedio == dto.IdRemedio);
+                var formaPagamento = await _context.FormasPagamento.FirstOrDefaultAsync(fp => fp.IdFormaPagamento == dto.IdFormaPagamento);;
+                var utilizador = await _context.Utilizadores.FirstOrDefaultAsync(u => u.IdUtilizador == dto.IdUtilizador);
 
-                novaPromocao.FormaPagamento = formaPagamento;
-                novaPromocao.Colaborador = colaborador;
-                novaPromocao.Remedio = remedio;
+                var ultimoId = await _context.Promocoes.OrderByDescending(x => x.IdPromocao).Select(x => x.IdPromocao).FirstOrDefaultAsync();
 
-                _context.Promocoes.Add(novaPromocao);
+                var p = new Promocao();
+                p.IdPromocao = ultimoId + 1;
+                p.IdRemedio = dto.IdRemedio;
+                p.IdFormaPagamento = dto.IdFormaPagamento;
+                p.IdUtilizador = dto.IdUtilizador;
+                p.Descricao = dto.Descricao;
+                p.DataInicio = dto.DataInicio;
+                p.DataFim = dto.DataFim;
+                p.Valor = dto.Valor;
+                p.Remedio = remedio;
+                p.FormaPagamento = formaPagamento;
+                p.Utilizador = utilizador;
+
+                _context.Promocoes.Add(p);
                 await _context.SaveChangesAsync();
 
-                return CreatedAtAction(nameof(GetPromocao), new { id = novaPromocao.IdPromocao }, novaPromocao);
+                return CreatedAtAction(nameof(GetPromocaoPorId), new { id = p.IdPromocao }, p);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Erro interno no servidor: {ex.Message}");
+                return StatusCode(500, $"Erro ao criar item: {ex.Message}");
             }
         }
-
         #endregion
 
-        #region DeletePromocao
-
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeletePromocao(int id)
+        #region PUT
+        [HttpPut("{id}")]
+        public async Task<ActionResult> PutPromocao(int id, [FromBody] PromocaoUpdateDTO dto)
         {
             try
             {
-                var promocao = await _context.Promocoes.FindAsync(id);
+                if (!await _context.Promocoes.AnyAsync(x => x.IdPromocao == id))
+                    return NotFound($"A Promocao com o ID {id} não foi encontrada.");
+
+                // Atualize os campos
+                var remedio = await _context.Remedios.FirstOrDefaultAsync(r => r.IdRemedio == dto.IdRemedio);
+                var formaPagamento = await _context.FormasPagamento.FirstOrDefaultAsync(fp => fp.IdFormaPagamento == dto.IdFormaPagamento);;
+                var utilizador = await _context.Utilizadores.FirstOrDefaultAsync(u => u.IdUtilizador == dto.IdUtilizador);
+
+                var p = new Promocao();
+                p.IdPromocao = dto.IdPromocao;
+                p.IdRemedio = dto.IdRemedio;
+                p.IdFormaPagamento = dto.IdFormaPagamento;
+                p.IdUtilizador = dto.IdUtilizador;
+                p.Descricao = dto.Descricao;
+                p.DataInicio = dto.DataInicio;
+                p.DataFim = dto.DataFim;
+                p.Valor = dto.Valor;
+                p.Remedio = remedio;
+                p.FormaPagamento = formaPagamento;
+                p.Utilizador = utilizador;
+
+
+                _context.Promocoes.Update(p);
+                await _context.SaveChangesAsync();
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Erro ao atualizar item: {ex.Message}");
+            }
+        }
+        #endregion
+
+        #region DELETE
+        [HttpDelete("{id}")]
+        public async Task<ActionResult> DeletePromocao(int id)
+        {
+            try
+            {
+                var promocao = await _context.Promocoes.FirstOrDefaultAsync(x => x.IdPromocao == id);
                 if (promocao == null)
-                {
-                    return NotFound($"Promoção com o id {id} não encontrada.");
-                }
+                    return NotFound($"A Promocao com o ID {id} não foi encontrada.");
 
                 _context.Promocoes.Remove(promocao);
                 await _context.SaveChangesAsync();
@@ -197,10 +153,9 @@ namespace Medicare_API.Models
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Erro interno no servidor: {ex.Message}");
+                return StatusCode(500, $"Erro ao deletar item: {ex.Message}");
             }
         }
-
         #endregion
     }
 }

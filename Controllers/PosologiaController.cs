@@ -1,16 +1,13 @@
 using Medicare_API.Data;
 using Medicare_API.Models;
+using Medicare_API.Models.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
-namespace Medicare_API.Models
+namespace Medicare_API.Controllers
 {
     [Route("[controller]")]
-    [ApiController]
-    public class PosologiaController : ControllerBase
+    public class PosologiaController : Controller
     {
         private readonly DataContext _context;
 
@@ -19,170 +16,183 @@ namespace Medicare_API.Models
             _context = context;
         }
 
-        #region GetPosologias
-
+        #region GET
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Posologia>>> GetPosologias()
+        public async Task<ActionResult<IEnumerable<Posologia>>> GetAllPosologias()
         {
             try
             {
                 var posologias = await _context.Posologias.ToListAsync();
+
                 if (posologias == null || posologias.Count == 0)
-                {
-                    return NotFound("Nenhuma posologia encontrada.");
-                }
+                    return NotFound();
 
                 return Ok(posologias);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Erro interno no servidor: {ex.Message}");
+                return StatusCode(500, $"Erro interno: {ex.Message}");
             }
         }
-
         #endregion
 
-        #region GetPosologia
-
+        #region GET {id}
         [HttpGet("{id}")]
-        public async Task<ActionResult<Posologia>> GetPosologia(int id)
+        public async Task<ActionResult<Posologia>> GetPosologiaPorId(int id)
         {
             try
             {
-                var posologia = await _context.Posologias.FindAsync(id);
+                var posologia = await _context.Posologias.FirstOrDefaultAsync(p => p.IdPosologia == id);
+
                 if (posologia == null)
-                {
-                    return NotFound($"Posologia com o id {id} não encontrada.");
-                }
+                    return NotFound();
 
                 return Ok(posologia);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Erro interno no servidor: {ex.Message}");
+                return StatusCode(500, $"Erro interno: {ex.Message}");
             }
         }
-
         #endregion
 
-        #region PutPosologia
-
-        [HttpPut("{idPosologia}+{idRemedio}")]
-        public async Task<ActionResult<Posologia>> PutPosologia(int idPosologia, int idRemedio, [FromBody] Posologia posologia)
-        {
-            if ( posologia.IdRemedio == 0 || posologia.IdUtilizador == 0)
-            {
-                return BadRequest("Os Ids de Posologia, Remédio e Utilizador são obrigatórios.");
-            }
-
-            try
-            {
-                var posologiaExistente = await _context.Posologias
-                    .FirstOrDefaultAsync(p => p.IdPosologia == idPosologia);
-
-                var remedioExistente = await _context.Posologias
-                    .FirstOrDefaultAsync(p => p.IdRemedio == idRemedio);
-
-                if (posologiaExistente == null || remedioExistente == null)
-                {
-                    return NotFound($"Posologia com o id {idPosologia} não encontrada.");
-                }
-
-                var remedio = await _context.Remedios
-                    .FirstOrDefaultAsync(r => r.IdRemedio == posologia.IdRemedio);
-
-                var utilizador = await _context.Utilizadores
-                    .FirstOrDefaultAsync(u => u.IdUtilizador == posologia.IdUtilizador);
-
-                if (remedio == null || utilizador == null)
-                {
-                    return BadRequest("Remédio ou Utilizador não encontrados.");
-                }
-
-                posologiaExistente.IdRemedio = posologia.IdRemedio;
-                posologiaExistente.IdUtilizador = posologia.IdUtilizador;
-                posologiaExistente.DtInicio = posologia.DtInicio;
-                posologiaExistente.DtFim = posologia.DtFim;
-                posologiaExistente.Intervalo = posologia.Intervalo;
-                posologiaExistente.QtdRemedio = posologia.QtdRemedio;
-
-                posologiaExistente.Remedio = remedio;
-                posologiaExistente.Utilizador = utilizador;
-
-                _context.Posologias.Update(posologiaExistente);
-                await _context.SaveChangesAsync();
-
-                return Ok(posologiaExistente);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Erro interno no servidor: {ex.Message}");
-            }
-        }
-
-        #endregion
-
-        #region PostPosologia
-
+        #region POST
         [HttpPost]
-        public async Task<ActionResult<Posologia>> PostPosologia([FromBody] Posologia posologia)
+        public async Task<ActionResult> PostPosologia([FromBody] PosologiaCreateDTO dto, List<Horario> horarios)
         {
-            if (posologia.IdRemedio == 0 || posologia.IdUtilizador == 0)
-            {
-                return BadRequest("Os Ids de Remédio e Utilizador são obrigatórios.");
-            }
-
             try
             {
-                var remedio = await _context.Remedios
-                    .FirstOrDefaultAsync(r => r.IdRemedio == posologia.IdRemedio);
-
-                var utilizador = await _context.Utilizadores
-                    .FirstOrDefaultAsync(u => u.IdUtilizador == posologia.IdUtilizador);
-
-                if (remedio == null || utilizador == null)
+                if (await _context.Posologias
+                    .AnyAsync(p => p.IdRemedio == dto.IdRemedio && p.IdUtilizador == dto.IdUtilizador && p.DataInicio == dto.DataInicio))
                 {
-                    return BadRequest("Remédio ou Utilizador não encontrados.");
+                    return BadRequest($"Já existe uma posologia para o Remédio {dto.IdRemedio} e Utilizador {dto.IdUtilizador} iniciada na data {dto.DataInicio}.");
                 }
 
-                var novaPosologia = new Posologia(
-                    idPosologia : posologia.IdPosologia,
-                    idRemedio : posologia.IdRemedio,
-                    idUtilizador : posologia.IdUtilizador,
-                    dtInicio : posologia.DtInicio,
-                    dtFim : posologia.DtFim,
-                    intervalo : posologia.Intervalo,
-                    qtdRemedio : posologia.QtdRemedio
-                );
+                var remedio = await _context.Remedios.FirstOrDefaultAsync(r => r.IdRemedio == dto.IdRemedio);
+                var utilizador = await _context.Utilizadores.FirstOrDefaultAsync(u => u.IdUtilizador == dto.IdUtilizador);
+                var tipoFarmaceutico = await _context.TiposFarmaceutico.FirstOrDefaultAsync(f => f.IdTipoFarmaceutico == dto.IdTipoFarmaceutico);
+                var tipoGrandeza = await _context.TiposGrandeza.FirstOrDefaultAsync(g => g.IdTipoGrandeza == dto.IdTipoGrandeza);
+                var tipoAgendamento = await _context.TiposAgendamento.FirstOrDefaultAsync(a => a.IdTipoAgendamento == dto.IdTipoAgendamento);
 
-                novaPosologia.Remedio = remedio;
-                novaPosologia.Utilizador = utilizador;
+                var ultimoId = await _context.Posologias.OrderByDescending(p => p.IdPosologia).Select(p => p.IdPosologia).FirstOrDefaultAsync();
 
-                _context.Posologias.Add(novaPosologia);
+                var p = new Posologia();
+
+                p.IdPosologia = ultimoId + 1;
+                p.IdRemedio = dto.IdRemedio;
+                p.IdUtilizador = dto.IdUtilizador;
+                p.IdTipoFarmaceutico = dto.IdTipoFarmaceutico;
+                p.IdTipoGrandeza = dto.IdTipoGrandeza;
+                p.IdTipoAgendamento = dto.IdTipoAgendamento;
+                p.Quantidade = dto.Quantidade;
+                p.QuantidadeDose = dto.QuantidadeDose;
+                p.DataInicio = dto.DataInicio;
+                p.DataFim = dto.DataFim;
+                p.Intervalo = dto.Intervalo!;
+                p.DiasSemana = dto.DiasSemana!;
+                p.DiasUso = dto.DiasUso;
+                p.DiasPausa = dto.DiasPausa;
+                p.Remedio = remedio!;
+                p.Utilizador = utilizador!;
+                p.TipoFarmaceutico = tipoFarmaceutico!;
+                p.TipoGrandeza = tipoGrandeza!;
+                p.TipoAgendamento = tipoAgendamento!;
+
+
+                _context.Posologias.Add(p);
                 await _context.SaveChangesAsync();
 
-                return CreatedAtAction(nameof(GetPosologia), new { id = novaPosologia.IdPosologia }, novaPosologia);
+                // Associa os horários à posologia
+                foreach (var horario in horarios)
+                {
+                    horario.IdPosologia = p.IdPosologia;
+                    _context.Horarios.Add(horario);
+                }
+
+                await _context.SaveChangesAsync();
+
+                // Cria os alarmes para a posologia
+                var alarmes = GerarAlarmes(p, horarios);
+                foreach (var alarme in alarmes)
+                {
+                    _context.Alarmes.Add(alarme);
+                }
+
+                await _context.SaveChangesAsync();
+
+                return CreatedAtAction(nameof(GetPosologiaPorId), new { id = p.IdPosologia }, p);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Erro interno no servidor: {ex.Message}");
+                return StatusCode(500, $"Erro ao criar item: {ex.Message}");
             }
         }
-
         #endregion
 
-        #region DeletePosologia
+        #region PUT
+        [HttpPut("{id}")]
+        public async Task<ActionResult> PutPosologia(int id, [FromBody] PosologiaUpdateDTO dto)
+        {
+            try
+            {
 
+                if (!await _context.Posologias
+                    .AnyAsync(p => p.IdRemedio == dto.IdRemedio && p.IdUtilizador == dto.IdUtilizador && p.DataInicio == dto.DataInicio))
+                {
+                    return BadRequest($"Não existe uma posologia para o Remédio {dto.IdRemedio} e Utilizador {dto.IdUtilizador} iniciada na data {dto.DataInicio}.");
+                }
+
+                var remedio = await _context.Remedios.FirstOrDefaultAsync(r => r.IdRemedio == dto.IdRemedio);
+                var utilizador = await _context.Utilizadores.FirstOrDefaultAsync(u => u.IdUtilizador == dto.IdUtilizador);
+                var tipoFarmaceutico = await _context.TiposFarmaceutico.FirstOrDefaultAsync(f => f.IdTipoFarmaceutico == dto.IdTipoFarmaceutico);
+                var tipoGrandeza = await _context.TiposGrandeza.FirstOrDefaultAsync(g => g.IdTipoGrandeza == dto.IdTipoGrandeza);
+                var tipoAgendamento = await _context.TiposAgendamento.FirstOrDefaultAsync(a => a.IdTipoAgendamento == dto.IdTipoAgendamento);
+
+
+                var p = new Posologia();
+
+                p.IdPosologia = dto.IdPosologia;
+                p.IdRemedio = dto.IdRemedio;
+                p.IdUtilizador = dto.IdUtilizador;
+                p.IdTipoFarmaceutico = dto.IdTipoFarmaceutico;
+                p.IdTipoGrandeza = dto.IdTipoGrandeza;
+                p.IdTipoAgendamento = dto.IdTipoAgendamento;
+                p.Quantidade = dto.Quantidade;
+                p.QuantidadeDose = dto.QuantidadeDose;
+                p.DataInicio = dto.DataInicio;
+                p.DataFim = dto.DataFim;
+                p.Intervalo = dto.Intervalo!;
+                p.DiasSemana = dto.DiasSemana!;
+                p.DiasUso = dto.DiasUso;
+                p.DiasPausa = dto.DiasPausa;
+                p.Remedio = remedio!;
+                p.Utilizador = utilizador!;
+                p.TipoFarmaceutico = tipoFarmaceutico!;
+                p.TipoGrandeza = tipoGrandeza!;
+                p.TipoAgendamento = tipoAgendamento!;
+
+                _context.Posologias.Update(p);
+                await _context.SaveChangesAsync();
+
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Erro ao atualizar item: {ex.Message}");
+            }
+        }
+        #endregion
+
+        #region DELETE
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeletePosologia(int id)
+        public async Task<ActionResult> DeletePosologia(int id)
         {
             try
             {
                 var posologia = await _context.Posologias.FindAsync(id);
                 if (posologia == null)
-                {
-                    return NotFound($"Posologia com o id {id} não encontrada.");
-                }
+                    return NotFound($"A Posologia com o ID {id} não foi encontrada.");
 
                 _context.Posologias.Remove(posologia);
                 await _context.SaveChangesAsync();
@@ -191,10 +201,75 @@ namespace Medicare_API.Models
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Erro interno no servidor: {ex.Message}");
+                return StatusCode(500, $"Erro ao deletar item: {ex.Message}");
             }
         }
+        #endregion
+        #region 
 
+        // Método privado para gerar alarmes
+        private List<Alarme> GerarAlarmes(Posologia posologia, List<Horario> horarios)
+        {
+            var alarmes = new List<Alarme>();
+            DateTime dataAtual = posologia.DataInicio;
+            DateTime dataFim = posologia.DataFim != default ? posologia.DataFim : DateTime.Now.AddMonths(1);
+
+            TimeSpan intervaloHoras = TimeSpan.Zero;
+            if (posologia.IdTipoAgendamento == 1)  // Se for agendamento a cada X horas
+                intervaloHoras = TimeSpan.FromHours(int.Parse(posologia.Intervalo));
+
+            while (dataAtual <= dataFim)
+            {
+                if (ValidarDia(posologia, dataAtual))
+                {
+                    foreach (var horario in horarios)
+                    {
+                        var dataHora = dataAtual.Date.Add(horario.Hora.TimeOfDay);
+                        if (dataHora >= posologia.DataInicio && dataHora <= dataFim)
+                        {
+                            alarmes.Add(new Alarme
+                            {
+                                IdPosologia = posologia.IdPosologia,
+                                DataHora = dataHora,
+                                Descricao = $"Tomar {posologia.QuantidadeDose} de {GetNomeRemedio(posologia.IdRemedio)}",
+                                Status = "pendente"
+                            });
+                        }
+                    }
+                }
+
+                dataAtual = posologia.IdTipoAgendamento == 1 ?
+                    dataAtual.Add(intervaloHoras) :
+                    dataAtual.AddDays(1);
+            }
+
+            return alarmes;
+        }
+
+        // Método privado para validar o dia
+        private bool ValidarDia(Posologia posologia, DateTime dia)
+        {
+            if (posologia.IdTipoAgendamento == 3)  // Se o agendamento for alternado
+            {
+                int ciclo = posologia.DiasUso + posologia.DiasPausa;
+                int diasDesdeInicio = (dia - posologia.DataInicio).Days;
+                return diasDesdeInicio % ciclo < posologia.DiasUso;
+            }
+
+            if (!string.IsNullOrWhiteSpace(posologia.DiasSemana))
+            {
+                var diasSemana = posologia.DiasSemana.Split(',').Select(int.Parse).ToList();
+                return diasSemana.Contains((int)dia.DayOfWeek);
+            }
+
+            return true;
+        }
+
+        // Método privado para obter o nome do remédio
+        private string GetNomeRemedio(int idRemedio)
+        {
+            return _context.Remedios.Find(idRemedio)?.Nome ?? "Medicamento";
+        }
         #endregion
     }
 }

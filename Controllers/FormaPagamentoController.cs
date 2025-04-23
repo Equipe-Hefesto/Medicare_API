@@ -1,13 +1,13 @@
 using Medicare_API.Data;
 using Medicare_API.Models;
+using Medicare_API.Models.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace Medicare_API.Models
+namespace Medicare_API.Controllers
 {
     [Route("[controller]")]
-    [ApiController]
-    public class FormaPagamentoController : ControllerBase
+    public class FormaPagamentoController : Controller
     {
         private readonly DataContext _context;
 
@@ -15,123 +15,125 @@ namespace Medicare_API.Models
         {
             _context = context;
         }
-        #region Get
+
+        #region GET
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<FormaPagamento>>> GetFormaPagamentos()
+        public async Task<ActionResult<IEnumerable<FormaPagamento>>> GetAllFormasPagamento()
         {
             try
             {
                 var formas = await _context.FormasPagamento.ToListAsync();
-
-                if (formas == null || !formas.Any())
+                if (formas == null || formas.Count == 0)
                     return NotFound();
 
                 return Ok(formas);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, $"Erro interno: {ex.Message}");
             }
         }
+        #endregion
 
+        #region GET {id}
         [HttpGet("{id}")]
-        public async Task<ActionResult<FormaPagamento>> GetFormaPagamento(int id)
+        public async Task<ActionResult<FormaPagamento>> GetFormaPagamentoPorId(int id)
         {
             try
             {
-                var formaPagamento = await _context.FormasPagamento.FindAsync(id);
-                if (formaPagamento == null)
-                {
+                var forma = await _context.FormasPagamento.FindAsync(id);
+                if (forma == null)
                     return NotFound();
-                }
 
-                return Ok(formaPagamento);
+                return Ok(forma);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, $"Erro interno: {ex.Message}");
             }
         }
         #endregion
 
-
-        #region Post
+        #region POST
         [HttpPost]
-        public async Task<ActionResult<FormaPagamento>> PostFormaPagamento(FormaPagamento formaPagamento)
+        public async Task<ActionResult> PostFormaPagamento([FromBody] FormaPagamentoCreateDTO dto)
         {
             try
             {
-                _context.FormasPagamento.Add(formaPagamento);
+                if (await _context.FormasPagamento.AnyAsync(fp => fp.Descricao.ToLower() == dto.Descricao.ToLower()))
+                {
+                    return BadRequest($"A forma pagamento {dto.Descricao} informada já existe.");
+                }
+
+                var ultimoId = await _context.FormasPagamento.OrderByDescending(x => x.IdFormaPagamento).Select(x => x.IdFormaPagamento).FirstOrDefaultAsync();
+
+                var f = new FormaPagamento();
+                f.IdFormaPagamento = ultimoId + 1;
+                f.Descricao = dto.Descricao;
+                f.QtdeMinParcelas = dto.QtdeMinParcelas;
+                f.QtdeMaxParcelas = dto.QtdeMaxParcelas;
+                f.QtdeParcelas = dto.QtdeParcelas;
+
+                _context.FormasPagamento.Add(f);
                 await _context.SaveChangesAsync();
 
-                return CreatedAtAction(nameof(GetFormaPagamento), new { id = formaPagamento.IdFormaPagamento }, formaPagamento);
+                return CreatedAtAction(nameof(GetFormaPagamentoPorId), new { id = f.IdFormaPagamento }, f);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, $"Erro ao criar item: {ex.Message}");
             }
         }
-
         #endregion
 
-        #region Put
+        #region PUT
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutFormaPagamento(int id, FormaPagamento formaPagamento)
+        public async Task<ActionResult> PutFormaPagamento(int id, [FromBody] FormaPagamentoUpdateDTO dto)
         {
             try
-            {   
-                var formaExistente = await _context.FormasPagamento
-                    .FirstOrDefaultAsync(f => f.IdFormaPagamento == id);
+            {
+                if (!await _context.FormasPagamento.AnyAsync(x => x.IdFormaPagamento == id))
+                    return NotFound($"A forma pagamento com o ID {id} não foi encontrado.");
+
+                // Atualize os campos
+                var f = new FormaPagamento();
+                f.IdFormaPagamento = dto.IdFormaPagamento;
+                f.Descricao = dto.Descricao;
+                f.QtdeMinParcelas = dto.QtdeMinParcelas;
+                f.QtdeMaxParcelas = dto.QtdeMaxParcelas;
+                f.QtdeParcelas = dto.QtdeParcelas;
 
 
-                if (formaExistente == null)
-                {
-                    return NotFound($"Forma de pagamento com o id {id} não encontrada.");
-                }
-
-                _context.Entry(formaPagamento).State = EntityState.Modified;
+                _context.FormasPagamento.Update(f);
                 await _context.SaveChangesAsync();
 
                 return NoContent();
             }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!_context.FormasPagamento.Any(e => e.IdFormaPagamento == id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, $"Erro ao atualizar item: {ex.Message}");
             }
         }
         #endregion
 
-        #region  Delete
+        #region DELETE
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteFormaPagamento(int id)
+        public async Task<ActionResult> DeleteFormaPagamento(int id)
         {
             try
             {
-                var formaPagamento = await _context.FormasPagamento.FindAsync(id);
-                if (formaPagamento == null)
-                {
-                    return NotFound();
-                }
+                var tipo = await _context.FormasPagamento.FirstOrDefaultAsync(x => x.IdFormaPagamento == id);
+                if (tipo == null)
+                    return NotFound($"A forma pagamento com o ID {id} não foi encontrada.");
 
-                _context.FormasPagamento.Remove(formaPagamento);
+                _context.FormasPagamento.Remove(tipo);
                 await _context.SaveChangesAsync();
 
                 return NoContent();
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, $"Erro ao deletar item: {ex.Message}");
             }
         }
         #endregion

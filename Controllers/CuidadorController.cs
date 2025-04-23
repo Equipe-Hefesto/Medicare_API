@@ -1,13 +1,13 @@
 using Medicare_API.Data;
 using Medicare_API.Models;
+using Medicare_API.Models.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace Medicare_API.Models
+namespace Medicare_API.Controllers
 {
     [Route("[controller]")]
-    [ApiController]
-    public class CuidadorController : ControllerBase
+    public class CuidadorController : Controller
     {
         private readonly DataContext _context;
 
@@ -16,198 +16,198 @@ namespace Medicare_API.Models
             _context = context;
         }
 
-        #region Get
+        #region GET
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Cuidador>>> GetCuidadores()
+        public async Task<ActionResult<IEnumerable<Cuidador>>> GetAllRelacionamentos()
         {
             try
             {
-                var cuidadores = await _context.Cuidadores.ToListAsync();
-
-                if (cuidadores == null || !cuidadores.Any())
-                    return NotFound();
-
-                return Ok(cuidadores);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
-        }
-
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Cuidador>> GetCuidador(int id)
-        {
-            try
-            {
-                var cuidador = await _context.Cuidadores.FindAsync(id);
-
-                if (cuidador == null)
+                var relacionamentos = await _context.Cuidadores.ToListAsync();
+                if (relacionamentos == null || relacionamentos.Count == 0)
                 {
                     return NotFound();
                 }
 
-                return Ok(cuidador);
+                return Ok(relacionamentos);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, $"Erro interno: {ex.Message}");
             }
         }
         #endregion
 
-        #region Put
-        [HttpPut("{id1}+{id2}")]
-        public async Task<ActionResult<Cuidador>> PutCuidador(int id1, int id2, [FromBody] CuidadorDTO cuidadorDTO)
+        #region GET {id}
+        [HttpGet("{idCuidador}/{idPaciente}")]
+        public async Task<ActionResult<Cuidador>> GetRelacionamentoPorIds(int idCuidador, int idPaciente)
         {
             try
             {
-                
-
-                // 1. Verificar se o IdTipoUtilizador foi enviado
-                if (cuidadorDTO.IdCuidador == 0 || cuidadorDTO.IdUtilizador == 0)
+                var relacionamento = await _context.Cuidadores.FirstOrDefaultAsync(c => c.IdCuidador == idCuidador && c.IdPaciente == idPaciente);
+                if (relacionamento == null)
                 {
-                    return BadRequest("O Id é obrigatório.");
+                    return NotFound();
                 }
 
-                // 2. Buscar o Cuidador pelo Id
-                var cuidador = await _context.Cuidadores
-                    .FirstOrDefaultAsync(c => c.IdCuidador == id1);
-                var utilizador = await _context.Cuidadores
-                    .FirstOrDefaultAsync(c => c.IdUtilizador == id2);
+                return Ok(relacionamento);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Erro interno: {ex.Message}");
+            }
+        }
+        #endregion
 
-                if (cuidador == null || utilizador == null)
-                {
-                    return NotFound("Usuário(s) não encontrado.");
-                }
+        #region POST
+        [HttpPost]
+        public async Task<ActionResult> PostRelacionamento([FromBody] CuidadorDTO dto)
+        {
+            try
+            {
+                // Validar se o Cuidador existe e é do tipo correto
+                (ActionResult? erroCuidador, Utilizador? cuidador) = await ObterUtilizadorValidado(dto.IdCuidador, 2, "Cuidador");
+                if (erroCuidador != null) return erroCuidador;  // Se houver erro, retorna o erro imediatamente
 
-                // 3. Buscar os Utilizadores
-                var cuidadorDt = await _context.Utilizadores
-                    .FirstOrDefaultAsync(u => u.IdUtilizador == cuidadorDTO.IdCuidador);
+                // Validar se o Paciente existe e é do tipo correto
+                (ActionResult? erroPaciente, Utilizador? paciente) = await ObterUtilizadorValidado(dto.IdPaciente, 1, "Paciente");
+                if (erroPaciente != null) return erroPaciente;  // Se houver erro, retorna o erro imediatamente
 
-                var utilizadorDt = await _context.Utilizadores
-                    .FirstOrDefaultAsync(u => u.IdUtilizador == cuidadorDTO.IdUtilizador);
+                // Validar se o relacionamento já existe
+                (ActionResult? erroRelacao, Cuidador? relação) = await VerificarRelacionamento(dto.IdCuidador, dto.IdPaciente, "nao_existe");
+                if (erroRelacao != null) return erroRelacao;
+                //Validar informações
 
-                // 4. Se algum Utilizador não for encontrado, retornar erro
-                if (cuidadorDt == null || utilizadorDt == null)
-                {
-                    return BadRequest("Os utilizadores são nulos.");
-                }
 
-                // 5. Verificar se os utilizadores são do tipo correto
-                if (cuidadorDt.IdTipoUtilizador != 2 && utilizadorDt.IdTipoUtilizador != 1)
-                {
-                    return BadRequest("Os utilizadores não pertencem ao tipo correto.");
-                }
+                var c = new Cuidador();
+                c.IdCuidador = dto.IdCuidador;
+                c.IdPaciente = dto.IdPaciente;
+                c.DataInicio = dto.DataInicio;
+                c.DataFim = dto.DataFim;
+                c.DataCriacao = DateTime.Now;
+                c.DataAtualizacao = DateTime.Now;
+                c.Status = "A";
+                c.CuidadorUser = cuidador;
+                c.Paciente = paciente;
 
-                // 6. Atualizar os dados do Cuidador
-                cuidador.IdCuidador = cuidadorDTO.IdCuidador;
-                cuidador.IdUtilizador = cuidadorDTO.IdUtilizador;
-                cuidador.DtInicio = cuidadorDTO.DtInicio;
-                cuidador.DtFim = cuidadorDTO.DtFim;
-                cuidador.StCuidador = cuidadorDTO.StCuidador;
-                cuidador.DuCuidador = DateTime.Now;  // Pode ser alterado conforme necessidade
-                cuidador.CuidadorUtilizador = cuidadorDt;
-                cuidador.Utilizador = utilizadorDt;
-
-                // 8. Salvar as mudanças no contexto
-                _context.Cuidadores.Update(cuidador);
+                _context.Cuidadores.Add(c);
                 await _context.SaveChangesAsync();
 
-                // 9. Retornar o Cuidador atualizado
-                return Ok(cuidador);
+                return CreatedAtAction(nameof(GetRelacionamentoPorIds), new { idCuidador = c.IdCuidador, idPaciente = c.IdPaciente }, c);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, $"Erro ao criar item: {ex.Message}");
             }
         }
         #endregion
 
-        #region Post
-        [HttpPost]
-        public async Task<ActionResult<Cuidador>> PostCuidador([FromBody] CuidadorDTO cuidadorDTO)
+        #region PUT
+        [HttpPut("{idCuidador}/{idPaciente}")]
+        public async Task<ActionResult> PutRelacionamento(int idCuidador, int idPaciente, [FromBody] CuidadorUpdateDTO dto)
         {
             try
-            {
-                // 1. Verificar se o IdTipoUtilizador foi enviado
-                if (cuidadorDTO.IdCuidador == 0)
-                {
-                    return BadRequest("O IdTipoUtilizador é obrigatório.");
-                }
+            {   // Validar se o Cuidador existe e é do tipo correto
+                (ActionResult? erroCuidador, Utilizador? cuidador) = await ObterUtilizadorValidado(idCuidador, 2, "Cuidador");
+                if (erroCuidador != null) return erroCuidador;  // Se houver erro, retorna o erro imediatamente
 
-                // 2. Buscar o Utilizador
-                var cuidadorDt = await _context.Utilizadores
-                    .FirstOrDefaultAsync(u => u.IdUtilizador == cuidadorDTO.IdCuidador);
+                // Validar se o Paciente existe e é do tipo correto
+                (ActionResult? erroPaciente, Utilizador? paciente) = await ObterUtilizadorValidado(idPaciente, 1, "Paciente");
+                if (erroPaciente != null) return erroPaciente;  // Se houver erro, retorna o erro imediatamente
 
-                var utilizadorDt = await _context.Utilizadores
-                    .FirstOrDefaultAsync(u => u.IdUtilizador == cuidadorDTO.IdUtilizador);
+                // Validar se o relacionamento já existe
+                (ActionResult? erroRelacao, Cuidador? relacionamento ) = await VerificarRelacionamento(dto.IdCuidador, dto.IdPaciente, "existe");
+                if (erroRelacao != null) return erroRelacao;  // Se houver erro, retorna o erro imediatamente
 
-                
-                // 3. Se o TipoUtilizador não for encontrado, retornar erro
-                if (cuidadorDt == null || utilizadorDt == null)
-                {
-                    return BadRequest("Os utilizadores são nulos");
-                }
+                var c = relacionamento !;
 
-                if (cuidadorDt != null && utilizadorDt != null && (cuidadorDt.IdTipoUtilizador != 2 || utilizadorDt.IdTipoUtilizador != 1))
-                {
-                    return BadRequest("Os utilizadores não pertencem ao tipo correto");
-                }
-                else
-                {
-                    // 4. Criar o Cuidador e preencher os dados
-                    var cuidador = new Cuidador(
-                        idCuidador: cuidadorDTO.IdCuidador,
-                        idUtilizador: cuidadorDTO.IdUtilizador,
-                        dtInicio: cuidadorDTO.DtInicio,
-                        dtFim: cuidadorDTO.DtFim,
-                        dcCuidador: DateTime.Now,
-                        duCuidador: DateTime.Now,
-                        stCuidador: cuidadorDTO.StCuidador
-                    );
+                c.IdCuidador = dto.IdCuidador;
+                c.IdPaciente = dto.IdPaciente;
+                c.DataInicio = dto.DataInicio;
+                c.DataFim = dto.DataFim;
+                c.DataAtualizacao = DateTime.Now;
+                c.Status = dto.Status;
+                c.CuidadorUser = cuidador;
+                c.Paciente = paciente;
 
-                    // 5. Associar os Utilizadores à Cuidadores
-                    cuidador.CuidadorUtilizador = cuidadorDt;
-                    cuidador.Utilizador = utilizadorDt;
-
-                    // 6. Adicionar o Cuidador ao contexto e salvar
-                    _context.Cuidadores.Add(cuidador);
-                    await _context.SaveChangesAsync();
-
-                    // 7. Retornar o Cuidador criado
-                    return CreatedAtAction(nameof(GetCuidador), cuidador);
-                }
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
-        }
-        #endregion
-
-        #region Delete
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteCuidador(int id)
-        {
-            try
-            {
-                var cuidador = await _context.Cuidadores.FindAsync(id);
-                if (cuidador == null)
-                {
-                    return NotFound();
-                }
-
-                _context.Cuidadores.Remove(cuidador);
+                _context.Cuidadores.Update(c);
                 await _context.SaveChangesAsync();
 
                 return NoContent();
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, $"Erro ao atualizar item: {ex.Message}");
             }
         }
         #endregion
+
+        #region DELETE
+        [HttpDelete("{idCuidador}/{idPaciente}")]
+        public async Task<ActionResult> DeleteCuidador(int idCuidador, int idPaciente)
+        {
+            try
+            {
+                // Validar se o relacionamento já existe
+                (ActionResult? erroRelacao, Cuidador? relacionamento ) = await VerificarRelacionamento(idCuidador, idPaciente, "existe");
+                if (erroRelacao != null) return erroRelacao;  // Se houver erro, retorna o erro imediatamente
+
+                _context.Cuidadores.Remove(relacionamento!);
+                await _context.SaveChangesAsync();
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Erro ao deletar item: {ex.Message}");
+            }
+        }
+        #endregion
+
+        #region Adicionais
+        private async Task<(ActionResult? Erro, Utilizador? User)> ObterUtilizadorValidado(int id, int tipoEsperado, string papel)
+        {
+            // Verifica se o usuário existe
+            var utilizador = await _context.Utilizadores.FirstOrDefaultAsync(u => u.IdUtilizador == id);
+            if (utilizador == null)
+                return (BadRequest($"O Id{papel} {id} informado não existe."), null);
+
+            // Verifica se o usuário tem o tipo correto
+            var tipoValido = await _context.UtilizadoresTiposUtilizadores
+                .AnyAsync(ut => ut.IdUtilizador == id && ut.IdTipoUtilizador == tipoEsperado);
+
+            if (!tipoValido)
+                return (BadRequest($"O Id{papel} {id} informado não é do tipo certo."), null);
+
+            // Se tudo estiver certo, retorna o usuário
+            return (null, utilizador);
+        }
+
+        private async Task<(ActionResult? Erro, Cuidador? Relacionamento)> VerificarRelacionamento(int idCuidador, int idPaciente, string tipoValidacao)
+        {
+            var relacionamento = await _context.Cuidadores
+                .FirstOrDefaultAsync(c => c.IdCuidador == idCuidador && c.IdPaciente == idPaciente);
+
+            switch (tipoValidacao.ToLower()) // Convertendo para minúsculo só por segurança
+            {
+                case "nao_existe":
+                    // Se a relação já existe, dá erro. Senão, tudo certo (pode seguir e criar).
+                    if (relacionamento != null)
+                        return (BadRequest($"A relação IdCuidador {idCuidador} + IdPaciente {idPaciente} já existe."), null);
+                    return (null, null);
+
+                case "existe":
+                    // Se não existe, dá erro. Se existe, retorna ela.
+                    if (relacionamento == null)
+                        return (BadRequest($"A relação IdCuidador {idCuidador} + IdPaciente {idPaciente} não existe."), null);
+                    return (null, relacionamento);
+
+                default:
+                    // Se mandarem um valor inválido, dá erro também.
+                    return (BadRequest("Tipo de validação inválido. Use 'existe' ou 'nao_existe'."), null);
+            }
+        }
+
+        #endregion
+
     }
 }

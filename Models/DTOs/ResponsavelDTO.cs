@@ -3,19 +3,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-
-
-public class ResponsavelDTO
+namespace Medicare_API.Models.DTOs
 {
-    public required int IdResponsavel { get; set; }
+    public class ResponsavelCreateDTO
+    {
+        public int IdResponsavel { get; set; }
+        public int IdPaciente { get; set; }
+    }
 
-    public int IdUtilizador { get; set; }
+    public class ResponsavelUpdateDTO
+    {
+        public int IdResponsavel { get; set; }
+        public int IdPaciente { get; set; }
+        public required string Status { get; set; }
 
-    public required int IdGrauParentesco { get; set; }
-
-    public required DateTime DcResponsavel { get; set; }
-    public required DateTime DuResponsavel { get; set; }
-    public required string StResponsavel { get; set; }
+    }
 
 }
-

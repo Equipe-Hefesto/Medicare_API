@@ -7,26 +7,26 @@ using Microsoft.EntityFrameworkCore;
 namespace Medicare_API.Controllers
 {
     [Route("[controller]")]
-    public class RemedioController : Controller
+    public class TipoFarmaceuticoController : Controller
     {
         private readonly DataContext _context;
 
-        public RemedioController(DataContext context)
+        public TipoFarmaceuticoController(DataContext context)
         {
             _context = context;
         }
 
         #region GET
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Remedio>>> GetAllRemedios()
+        public async Task<ActionResult<IEnumerable<TipoFarmaceutico>>> GetAllTipos()
         {
             try
             {
-                var remedios = await _context.Remedios.ToListAsync();
-                if (remedios == null || remedios.Count == 0)
+                var tipos = await _context.TiposFarmaceutico.ToListAsync();
+                if (tipos == null || tipos.Count == 0)
                     return NotFound();
 
-                return Ok(remedios);
+                return Ok(tipos);
             }
             catch (Exception ex)
             {
@@ -37,15 +37,15 @@ namespace Medicare_API.Controllers
 
         #region GET {id}
         [HttpGet("{id}")]
-        public async Task<ActionResult<Remedio>> GetRemedioPorId(int id)
+        public async Task<ActionResult<TipoFarmaceutico>> GetTipoPorId(int id)
         {
             try
             {
-                var remedio = await _context.Remedios.FindAsync(id);
-                if (remedio == null)
+                var tipo = await _context.TiposFarmaceutico.FindAsync(id);
+                if (tipo == null)
                     return NotFound();
 
-                return Ok(remedio);
+                return Ok(tipo);
             }
             catch (Exception ex)
             {
@@ -56,27 +56,25 @@ namespace Medicare_API.Controllers
 
         #region POST
         [HttpPost]
-        public async Task<ActionResult> PostRemedio([FromBody] RemedioCreateDTO dto)
+        public async Task<ActionResult> PostTipo([FromBody] TipoCreateDTO dto)
         {
             try
             {
-                if (await _context.Remedios.AnyAsync(r => r.Nome.ToLower() == dto.Nome.ToLower()))
+                if (await _context.TiposFarmaceutico.AnyAsync(tu => tu.Descricao.ToLower() == dto.Descricao.ToLower()))
                 {
-                    return BadRequest($"O remedio {dto.Nome} informado já existe.");
+                    return BadRequest($"O tipo {dto.Descricao} informado já existe.");
                 }
 
-                var ultimoId = await _context.Remedios.OrderByDescending(x => x.IdRemedio).Select(x => x.IdRemedio).FirstOrDefaultAsync();
+                var ultimoId = await _context.TiposFarmaceutico.OrderByDescending(x => x.IdTipoFarmaceutico).Select(x => x.IdTipoFarmaceutico).FirstOrDefaultAsync();
 
-                var r = new Remedio();
-                r.IdRemedio = ultimoId + 1;
-                r.Nome = dto.Nome;
-                r.DataCriacao = DateTime.Now;
-                r.DataAtualizacao = DateTime.Now;
+                var t = new TipoFarmaceutico();
+                t.IdTipoFarmaceutico = ultimoId + 1;
+                t.Descricao = dto.Descricao;
 
-                _context.Remedios.Add(r);
+                _context.TiposFarmaceutico.Add(t);
                 await _context.SaveChangesAsync();
 
-                return CreatedAtAction(nameof(GetRemedioPorId), new { id = r.IdRemedio }, r);
+                return CreatedAtAction(nameof(GetTipoPorId), new { id = t.IdTipoFarmaceutico }, t);
             }
             catch (Exception ex)
             {
@@ -87,20 +85,20 @@ namespace Medicare_API.Controllers
 
         #region PUT
         [HttpPut("{id}")]
-        public async Task<ActionResult> PutTipo(int id, [FromBody] RemedioUpdateDTO dto)
+        public async Task<ActionResult> PutTipo(int id, [FromBody] TipoUpdateDTO dto)
         {
             try
             {
-                if (!await _context.Remedios.AnyAsync(x => x.IdRemedio == id))
-                    return NotFound($"O Remedio com o ID {id} não foi encontrado.");
+                if (!await _context.TiposFarmaceutico.AnyAsync(x => x.IdTipoFarmaceutico == id))
+                    return NotFound($"O Tipo com o ID {id} não foi encontrado.");
 
                 // Atualize os campos
-                 var r = new Remedio();
-                r.IdRemedio = dto.IdRemedio;
-                r.Nome = dto.Nome;
-                r.DataAtualizacao = DateTime.Now;
+                 var t = new TipoFarmaceutico();
+                t.IdTipoFarmaceutico = dto.IdTipo;
+                t.Descricao = dto.Descricao;
 
-                _context.Remedios.Update(r);
+
+                _context.TiposFarmaceutico.Update(t);
                 await _context.SaveChangesAsync();
 
                 return NoContent();
@@ -118,11 +116,11 @@ namespace Medicare_API.Controllers
         {
             try
             {
-                var remedio = await _context.Remedios.FirstOrDefaultAsync(x => x.IdRemedio == id);
-                if (remedio == null)
-                    return NotFound($"O Remedio com o ID {id} não foi encontrado.");
+                var tipo = await _context.TiposFarmaceutico.FirstOrDefaultAsync(x => x.IdTipoFarmaceutico == id);
+                if (tipo == null)
+                    return NotFound($"O Tipo com o ID {id} não foi encontrado.");
 
-                _context.Remedios.Remove(remedio);
+                _context.TiposFarmaceutico.Remove(tipo);
                 await _context.SaveChangesAsync();
 
                 return NoContent();

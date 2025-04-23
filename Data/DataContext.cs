@@ -5,19 +5,21 @@ namespace Medicare_API.Data
 {
       public class DataContext : DbContext
       {
-            public DbSet<TipoUtilizador> TiposUtilizador { get; set; }
             public DbSet<Utilizador> Utilizadores { get; set; }
-            public DbSet<Cuidador> Cuidadores { get; set; }
-            public DbSet<GrauParentesco> GrausParentesco { get; set; }
+            public DbSet<TipoUtilizador> TiposUtilizadores { get; set; }
+            public DbSet<TipoParentesco> TiposParentesco { get; set; }
             public DbSet<Responsavel> Responsaveis { get; set; }
+            public DbSet<Cuidador> Cuidadores { get; set; }
             public DbSet<Parceiro> Parceiros { get; set; }
-            public DbSet<ParceiroUtilizador> ParceirosUtilizador { get; set; }
-            public DbSet<Laboratorio> Laboratorios { get; set; }
-            public DbSet<TipoOrdemGrandeza> TiposOrdemGrandeza { get; set; }
+            public DbSet<UtilizadorTipoUtilizador> UtilizadoresTiposUtilizadores { get; set; }
+            public DbSet<ParceiroUtilizador> ParceirosUtilizadores { get; set; }
+            public DbSet<TipoGrandeza> TiposGrandeza { get; set; }
+            public DbSet<TipoFarmaceutico> TiposFarmaceutico { get; set; }
+            public DbSet<TipoAgendamento> TiposAgendamento { get; set; }
             public DbSet<Remedio> Remedios { get; set; }
             public DbSet<Posologia> Posologias { get; set; }
+            public DbSet<Horario> Horarios { get; set; }
             public DbSet<Alarme> Alarmes { get; set; }
-            public DbSet<HistoricoPosologia> HistoricosPosologia { get; set; }
             public DbSet<FormaPagamento> FormasPagamento { get; set; }
             public DbSet<Promocao> Promocoes { get; set; }
 
@@ -27,437 +29,299 @@ namespace Medicare_API.Data
 
             protected override void OnModelCreating(ModelBuilder modelBuilder)
             {
-                  #region TipoUtilizador
-                  modelBuilder.Entity<TipoUtilizador>(entity =>
-                  {
-                        entity.ToTable("TiposUtilizador");
-
-                        entity.HasKey(e => e.IdTipoUtilizador);
-
-
-                        entity.Property(e => e.Descricao)
-                        .HasMaxLength(14)
-                        .IsRequired();
-                  });
-                  #endregion
-
-                  #region Utilizador
-                  modelBuilder.Entity<Utilizador>(entity =>
-                  {
-                        entity.ToTable("Utilizadores"); ;
-                        entity.HasKey(e => e.IdUtilizador);
-
-                        entity.Property(e => e.CPF)
-                        .HasMaxLength(14)
-                        .IsRequired();
-
-                        entity.Property(e => e.Nome)
-                        .HasMaxLength(40)
-                        .IsRequired();
-
-                        entity.Property(e => e.Sobrenome)
-                        .HasMaxLength(40)
-                        .IsRequired();
-
-                        entity.Property(e => e.SenhaSalt)
-                        .IsRequired(false);
-
-                        entity.Property(e => e.SenhaHash)
-                        .IsRequired(false);
-
-                        entity.Property(e => e.DtNascimento)
-                        .IsRequired();
-
-                        entity.Property(e => e.Email)
-                        .HasMaxLength(255)
-                        .IsRequired();
-
-                        entity.Property(e => e.Telefone)
-                        .HasMaxLength(11)
-                        .IsRequired(false);
-
-                        entity.HasOne(e => e.TipoUtilizador)
-                        .WithMany(u => u.Utilizadores)
-                        .HasForeignKey(e => e.IdTipoUtilizador)
-                        .IsRequired()
-                        .OnDelete(DeleteBehavior.Restrict);
-
-
-
-                        entity.HasIndex(e => new { e.CPF, e.IdTipoUtilizador }).IsUnique(); // CPF único por tipo de utilizador
-                  });
-                  #endregion
-
-                  #region Cuidador
-                  modelBuilder.Entity<Cuidador>(entity =>
-                  {
-                        entity.ToTable("Cuidadores");
-
-                        entity.HasKey(e => new { e.IdCuidador, e.IdUtilizador });
-
-                        entity.Property(e => e.DtInicio)
-                        .IsRequired();
-
-                        entity.Property(e => e.DtFim)
-                        .IsRequired(false);
-
-                        entity.Property(e => e.DcCuidador)
-                        .IsRequired();
-
-                        entity.Property(e => e.DuCuidador)
-                        .IsRequired();
-
-                        entity.Property(e => e.StCuidador)
-                        .HasMaxLength(1)
-                        .IsRequired();
-
-                        entity.HasOne(e => e.Utilizador)
-                        .WithMany()
-                        .HasForeignKey(e => e.IdUtilizador)
-                        .IsRequired()
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                        entity.HasOne(e => e.CuidadorUtilizador)
-                        .WithMany()
-                        .HasForeignKey(e => e.IdCuidador)
-                        .IsRequired()
-                        .OnDelete(DeleteBehavior.Restrict);
-                  });
-                  #endregion
-
-                  #region GrauParentesco
-                  modelBuilder.Entity<GrauParentesco>(entity =>
-                   {
-                         entity.ToTable("GrausParentesco");
-
-                         entity.HasKey(e => e.IdGrauParentesco);
-
-                         entity.Property(e => e.Descricao)
-                         .HasMaxLength(15)
-                         .IsRequired();
-                   });
-                  #endregion
-
-                  #region Responsavel
-                  modelBuilder.Entity<Responsavel>(entity =>
-                  {
-                        entity.ToTable("Responsaveis");
-
-                        entity.HasKey(e => new { e.IdResponsavel, e.IdUtilizador });
-
-                        entity.Property(e => e.DcResponsavel)
-                          .IsRequired();
-
-                        entity.Property(e => e.DuResponsavel)
-                          .IsRequired();
-
-                        entity.Property(e => e.StResponsavel)
-                          .HasMaxLength(1)
-                          .IsRequired();
-
-                        entity.HasOne(e => e.Utilizador)
-                          .WithMany()
-                          .HasForeignKey(e => e.IdUtilizador)
-                          .IsRequired()
-                          .OnDelete(DeleteBehavior.Restrict);
-
-                        entity.HasOne(e => e.ResponsavelUtilizador)
-                          .WithMany()
-                          .HasForeignKey(e => e.IdResponsavel)
-                          .IsRequired()
-                          .OnDelete(DeleteBehavior.Restrict);
-
-                        entity.HasOne(e => e.GrauParentesco)
-                          .WithMany(re => re.Responsavel)
-                          .HasForeignKey(e => e.IdGrauParentesco)
-                          .IsRequired()
-                          .OnDelete(DeleteBehavior.Restrict);
-                  });
-                  #endregion
-
-                  #region Parceiro
-                  modelBuilder.Entity<Parceiro>(entity =>
-                  {
-                        entity.ToTable("Parceiros");
-
-                        entity.HasKey(e => e.IdParceiro);
-
-                        entity.Property(e => e.NomeParceiro)
-                      .HasMaxLength(50)
-                      .IsRequired();
-
-                        entity.Property(e => e.ApelidoParceiro)
-                      .HasMaxLength(25)
-                      .IsRequired();
-
-                        entity.Property(e => e.CNPJParceiro)
-                      .HasMaxLength(18)
-                      .IsRequired();
-
-                        entity.HasIndex(e => e.CNPJParceiro).IsUnique(); // CNPJ único
-                  });
-                  #endregion
-
-
-                  #region ParceiroUtilizador
-                  modelBuilder.Entity<ParceiroUtilizador>(entity =>
-                  {
-                        entity.ToTable("ParceirosUtilizadores");
-
-                        entity.HasKey(e => new { e.IdParceiro, e.IdColaborador });
-
-                        entity.HasOne(e => e.Parceiro)
-                          .WithMany()
-                          .HasForeignKey(e => e.IdParceiro)
-                          .IsRequired()
-                          .OnDelete(DeleteBehavior.Restrict);
-
-                        entity.HasOne(e => e.Colaborador)
-                        .WithMany()
-                        .HasForeignKey(e => e.IdColaborador)
-                        .IsRequired()
-                        .OnDelete(DeleteBehavior.Restrict);
-                  });
-                  #endregion
-
-                  #region  Laboratorio
-                  modelBuilder.Entity<Laboratorio>(entity =>
-                  {
-                        entity.ToTable("Laboratorios");
-
-                        entity.HasKey(e => e.IdLaboratorio);
-
-                        entity.Property(e => e.Nome)
-                        .HasMaxLength(50)
-                        .IsRequired();
-                  });
-                  #endregion
-
-                  #region TipoOrdemGrandeza
-                  modelBuilder.Entity<TipoOrdemGrandeza>(entity =>
-                  {
-                        entity.ToTable("TiposOrdemGrandeza");
-
-                        entity.HasKey(e => e.IdTipoOrdemGrandeza);
-
-                        entity.Property(e => e.Descricao)
-                        .HasMaxLength(25)
-                        .IsRequired();
-
-                        entity.Property(e => e.Simbolos)
-                        .HasMaxLength(4)
-                        .IsRequired();
-                  });
-                  #endregion
-
-                  #region Remedio
-                  modelBuilder.Entity<Remedio>(entity =>
-                  {
-                        entity.ToTable("Remedios");
-
-                        entity.HasKey(e => e.IdRemedio);
-
-                        entity.Property(e => e.NomeRemedio)
-                        .HasMaxLength(255)
-                        .IsRequired();
-
-                        entity.Property(e => e.Anotacao)
-                        .IsRequired();
-
-                        entity.Property(e => e.Dosagem)
-                        .IsRequired();
-
-                        entity.Property(e => e.DtRegistro)
-                        .IsRequired();
-
-                        entity.Property(e => e.QtdAlerta)
-                        .IsRequired();
-
-                        entity.HasOne(e => e.TipoOrdemGrandeza)
-                        .WithMany()
-                        .HasForeignKey(e => e.IdTipoOrdemGrandeza)
-                        .IsRequired()
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                        entity.HasOne(e => e.Laboratorio)
-                        .WithMany()
-                        .HasForeignKey(e => e.IdLaboratorio)
-                        .IsRequired()
-                        .OnDelete(DeleteBehavior.Restrict);
-                  });
-                  #endregion
-
-                  #region Posologia
-                  modelBuilder.Entity<Posologia>(entity =>
-                  {
-                        entity.ToTable("Posologias");
-
-                        entity.HasKey(e => e.IdPosologia);
-
-                        entity.Property(e => e.DtInicio)
-                        .IsRequired();
-
-                        entity.Property(e => e.Intervalo)
-                        .IsRequired();
-
-                        entity.Property(e => e.QtdRemedio)
-                        .IsRequired();
-
-                        entity.HasOne(e => e.Remedio)
-                        .WithMany()
-                        .HasForeignKey(e => e.IdRemedio)
-                        .IsRequired()
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                        entity.HasOne(e => e.Utilizador)
-                        .WithMany()
-                        .HasForeignKey(e => e.IdUtilizador)
-                        .IsRequired()
-                        .OnDelete(DeleteBehavior.Restrict);
-                  });
-                  #endregion
-
-                  #region Alarme
-                  modelBuilder.Entity<Alarme>(entity =>
-                  {
-                        entity.ToTable("Alarmes");
-
-                        entity.HasKey(e => e.IdAlarme);
-
-                        entity.Property(e => e.DtHoraAlarme)
-                        .IsRequired();
-
-                        entity.Property(e => e.StAlarme)
-                        .HasMaxLength(50)
-                        .IsRequired();
-
-                        entity.HasOne(e => e.Posologia)
-                        .WithMany()
-                        .HasForeignKey(e => e.IdPosologia)
-                        .IsRequired()
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                        entity.HasOne(e => e.Remedio)
-                        .WithMany()
-                        .HasForeignKey(e => e.IdRemedio)
-                        .IsRequired()
-                        .OnDelete(DeleteBehavior.Restrict);
-                  });
-                  #endregion
-
-                  #region HistoricoPosologia
-                  modelBuilder.Entity<HistoricoPosologia>(entity =>
-                  {
-                        entity.ToTable("HistoricosPosologia");
-
-                        entity.HasKey(e => new { e.IdPosologia, e.IdRemedio });
-
-                        entity.Property(e => e.SdPosologia)
-                        .IsRequired();
-
-                        entity.HasOne(e => e.Posologia)
-                        .WithMany()
-                        .HasForeignKey(e => e.IdPosologia)
-                        .IsRequired()
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                        entity.HasOne(e => e.Remedio)
-                        .WithMany()
-                        .HasForeignKey(e => e.IdRemedio)
-                        .IsRequired()
-                        .OnDelete(DeleteBehavior.Restrict);
-                  });
-                  #endregion
-
-                  #region FormaPagamento
-                  modelBuilder.Entity<FormaPagamento>(entity =>
-                  {
-                        entity.ToTable("FormasPagamento");
-
-                        entity.HasKey(e => e.IdFormaPagamento);
-
-                        entity.Property(e => e.Descricao)
-                        .HasMaxLength(45)
-                        .IsRequired();
-
-                        entity.Property(e => e.QtdParcelas)
-                        .IsRequired();
-
-                        entity.Property(e => e.QtdMinimaParcelas)
-                        .IsRequired();
-                  });
-                  #endregion
-
-                  #region Promocao
-                  modelBuilder.Entity<Promocao>(entity =>
-                  {
-                        entity.ToTable("Promocoes");
-                        entity.HasKey(e => e.IdPromocao);
-
-                        entity.Property(e => e.Descricao)
-                        .HasMaxLength(40)
-                        .IsRequired();
-
-                        entity.Property(e => e.DtInicio)
-                        .IsRequired();
-
-                        entity.Property(e => e.DtFim)
-                        .IsRequired();
-
-                        entity.Property(e => e.Valor)
-                        .IsRequired();
-                  });
-                  #endregion
-
                   base.OnModelCreating(modelBuilder);
 
-                  #region Seed de Dados
-                  modelBuilder.Entity<TipoUtilizador>().HasData(
-                      new TipoUtilizador { IdTipoUtilizador = 1, Descricao = "Utilizador" },
-                      new TipoUtilizador { IdTipoUtilizador = 2, Descricao = "Cuidador" },
-                      new TipoUtilizador { IdTipoUtilizador = 3, Descricao = "Responsável" },
-                      new TipoUtilizador { IdTipoUtilizador = 4, Descricao = "Parceiro" }
-                  );
+                  #region Utilizadores
+                  modelBuilder.Entity<Utilizador>(entity =>
+                  {
+                  entity.ToTable("Utilizadores");
+                  entity.HasKey(e => e.IdUtilizador);
 
-                  modelBuilder.Entity<GrauParentesco>().HasData(
-                      new GrauParentesco { IdGrauParentesco = 1, Descricao = "Pai" },
-                      new GrauParentesco { IdGrauParentesco = 2, Descricao = "Mãe" },
-                      new GrauParentesco { IdGrauParentesco = 3, Descricao = "Filho" },
-                      new GrauParentesco { IdGrauParentesco = 4, Descricao = "Filha" },
-                      new GrauParentesco { IdGrauParentesco = 5, Descricao = "Avô" },
-                      new GrauParentesco { IdGrauParentesco = 6, Descricao = "Avó" },
-                      new GrauParentesco { IdGrauParentesco = 7, Descricao = "Tio" },
-                      new GrauParentesco { IdGrauParentesco = 8, Descricao = "Tia" },
-                      new GrauParentesco { IdGrauParentesco = 9, Descricao = "Primo" },
-                      new GrauParentesco { IdGrauParentesco = 10, Descricao = "Prima" },
-                      new GrauParentesco { IdGrauParentesco = 11, Descricao = "Sobrinho" },
-                      new GrauParentesco { IdGrauParentesco = 12, Descricao = "Sobrinha" },
-                      new GrauParentesco { IdGrauParentesco = 13, Descricao = "Cônjuge" },
-                      new GrauParentesco { IdGrauParentesco = 14, Descricao = "Companheiro" },
-                      new GrauParentesco { IdGrauParentesco = 15, Descricao = "Companheira" }
-                  );
+                  entity.Property(e => e.Nome)
+                        .HasColumnName("nmUtilizador")
+                        .HasMaxLength(40)
+                        .IsRequired();
 
-                  modelBuilder.Entity<TipoOrdemGrandeza>().HasData(
-                       new TipoOrdemGrandeza { IdTipoOrdemGrandeza = 1, Descricao = "Miligrama", Simbolos = "mg" },
-                  new TipoOrdemGrandeza { IdTipoOrdemGrandeza = 2, Descricao = "Gramas", Simbolos = "g" },
-                  new TipoOrdemGrandeza { IdTipoOrdemGrandeza = 3, Descricao = "Litros", Simbolos = "L" },
-                  new TipoOrdemGrandeza { IdTipoOrdemGrandeza = 4, Descricao = "Mililitros", Simbolos = "mL" },
-                  new TipoOrdemGrandeza { IdTipoOrdemGrandeza = 5, Descricao = "Centímetros cúbicos", Simbolos = "cm³" },
-                  new TipoOrdemGrandeza { IdTipoOrdemGrandeza = 6, Descricao = "Unidades internacionais", Simbolos = "UI" },
-                  new TipoOrdemGrandeza { IdTipoOrdemGrandeza = 7, Descricao = "Micrograma", Simbolos = "mcg" },
-                  new TipoOrdemGrandeza { IdTipoOrdemGrandeza = 8, Descricao = "Quilograma", Simbolos = "kg" },
-                  new TipoOrdemGrandeza { IdTipoOrdemGrandeza = 9, Descricao = "Unidade", Simbolos = "un" },
-                  new TipoOrdemGrandeza { IdTipoOrdemGrandeza = 10, Descricao = "Pipeta", Simbolos = "gota" }, // Quantidade medida com pipeta (ex. gotas)
-                  new TipoOrdemGrandeza { IdTipoOrdemGrandeza = 11, Descricao = "Tabletes", Simbolos = "un" }, // Tabletes (geral para formas sólidas)
-                  new TipoOrdemGrandeza { IdTipoOrdemGrandeza = 12, Descricao = "Doses", Simbolos = "Dose" }, // Doses específicas (ex. vacina)
-                  new TipoOrdemGrandeza { IdTipoOrdemGrandeza = 13, Descricao = "Miliunidade", Simbolos = "mUI" }, // Miliunidade, usado para medicamentos biológicos
-                  new TipoOrdemGrandeza { IdTipoOrdemGrandeza = 14, Descricao = "Cápsulas", Simbolos = "un" }, // Cápsulas de medicamento
-                  new TipoOrdemGrandeza { IdTipoOrdemGrandeza = 15, Descricao = "Soluções", Simbolos = "Sol." }, // Soluções (medicamento diluído)
-                  new TipoOrdemGrandeza { IdTipoOrdemGrandeza = 16, Descricao = "Gotas", Simbolos = "gota" }, // Gotas (frequente em medicamentos líquidos)
-                  new TipoOrdemGrandeza { IdTipoOrdemGrandeza = 17, Descricao = "Miliquilos", Simbolos = "mL" }, // mL (reforçando unidade de líquidos)
-                  new TipoOrdemGrandeza { IdTipoOrdemGrandeza = 18, Descricao = "Injeções", Simbolos = "un" } // Injeções (para medicamentos parenterais)
-              );
+                  entity.Property(e => e.Sobrenome)
+                        .HasColumnName("sbUtilizador")
+                        .HasMaxLength(40)
+                        .IsRequired();
 
+                  entity.Property(e => e.CPF)
+                        .HasColumnName("cpfUtilizador")
+                        .HasMaxLength(11)
+                        .IsFixedLength()
+                        .IsRequired();
+
+                  entity.Property(e => e.Email)
+                        .HasColumnName("emUtilizador")
+                        .HasMaxLength(255)
+                        .IsRequired();
+
+                  entity.Property(e => e.Telefone)
+                        .HasColumnName("telUtilizador")
+                        .HasMaxLength(11)
+                        .IsFixedLength()
+                        .IsRequired();
+
+                  entity.Property(e => e.SenhaHash)
+                        .HasColumnName("senhaHash")
+                        .HasMaxLength(128)
+                        .IsRequired();
+
+                  entity.Property(e => e.SenhaSalt)
+                        .HasColumnName("senhaSalt")
+                        .HasMaxLength(64)
+                        .IsRequired();
+
+                  entity.Property(e => e.Username)
+                        .HasColumnName("userUtilizador")
+                        .HasMaxLength(30)
+                        .IsRequired();
+
+                  entity.HasIndex(e => e.CPF).IsUnique();
+                  entity.HasIndex(e => e.Username).IsUnique();
+                  });
+                  #endregion
+
+                  #region TiposUtilizadores
+                  modelBuilder.Entity<TipoUtilizador>(entity =>
+                  {
+                  entity.ToTable("TiposUtilizadores");
+                  entity.HasKey(e => e.IdTipoUtilizador);
+
+                  entity.Property(e => e.Descricao)
+                        .HasMaxLength(14)
+                        .IsRequired();
+                  });
+                  #endregion
+
+                  #region TiposParentesco
+                  modelBuilder.Entity<TipoParentesco>(entity =>
+                  {
+                  entity.ToTable("TiposParentesco");
+                  entity.HasKey(e => e.IdTipoParentesco);
+
+                  entity.Property(e => e.Descricao)
+                        .HasColumnName("dsParentesco")
+                        .HasMaxLength(20)
+                        .IsRequired();
+                  });
+                  #endregion
+
+                  #region Responsaveis
+                  modelBuilder.Entity<Responsavel>(entity =>
+                  {
+                  entity.ToTable("Responsaveis");
+                  entity.HasKey(e => new { e.IdResponsavel, e.IdPaciente });
+
+                  entity.Property(e => e.DataCriacao).HasColumnName("dcResponsabilidade").IsRequired();
+                  entity.Property(e => e.DataAtualizacao).HasColumnName("duResponsabilidade").IsRequired();
+                  entity.Property(e => e.Status).HasColumnName("stResponsabilidade").HasMaxLength(1).IsRequired();
+
+                  entity.HasOne(d => d.ResponsavelUser).WithMany().HasForeignKey(d => d.IdResponsavel).OnDelete(DeleteBehavior.Restrict);
+                  entity.HasOne(d => d.Paciente).WithMany().HasForeignKey(d => d.IdPaciente).OnDelete(DeleteBehavior.Restrict);
+                  entity.HasOne(d => d.TipoParentesco).WithMany().HasForeignKey(d => d.IdTipoParentesco);
+                  });
+                  #endregion
+
+                  #region Cuidadores
+                  modelBuilder.Entity<Cuidador>(entity =>
+                  {
+                  entity.ToTable("Cuidadores");
+                  entity.HasKey(e => new { e.IdCuidador, e.IdPaciente });
+
+                  entity.Property(e => e.DataInicio).HasColumnName("dtInicio").IsRequired();
+                  entity.Property(e => e.DataFim).HasColumnName("dtFim").IsRequired();
+                  entity.Property(e => e.DataCriacao).HasColumnName("dcCuidado").IsRequired();
+                  entity.Property(e => e.DataAtualizacao).HasColumnName("duCuidado").IsRequired();
+                  entity.Property(e => e.Status).HasColumnName("stCuidado").HasMaxLength(1).IsRequired();
+
+                  entity.HasOne(d => d.CuidadorUser).WithMany().HasForeignKey(d => d.IdCuidador).OnDelete(DeleteBehavior.Restrict);
+                  entity.HasOne(d => d.Paciente).WithMany().HasForeignKey(d => d.IdPaciente).OnDelete(DeleteBehavior.Restrict);
+                  });
+                  #endregion
+
+                  #region Parceiros
+                  modelBuilder.Entity<Parceiro>(entity =>
+                  {
+                  entity.ToTable("Parceiros");
+                  entity.HasKey(e => e.IdParceiro);
+
+                  entity.Property(e => e.Nome).HasColumnName("nmParceiro").HasMaxLength(50).IsRequired();
+                  entity.Property(e => e.Apelido).HasColumnName("apParceiro").HasMaxLength(25).IsRequired();
+                  entity.Property(e => e.CNPJ).HasColumnName("cnpjParceiro").HasMaxLength(18).IsRequired();
+                  entity.Property(e => e.Status).HasColumnName("stParceiro").HasMaxLength(1).IsRequired();
+
+                  entity.HasIndex(e => e.CNPJ).IsUnique();
+                  });
+                  #endregion
+
+                  #region Utilizadores_TiposUtilizadores
+                  modelBuilder.Entity<UtilizadorTipoUtilizador>(entity =>
+                  {
+                  entity.ToTable("Utilizadores_TiposUtilizadores");
+                  entity.HasKey(e => new { e.IdUtilizador, e.IdTipoUtilizador });
+
+                  entity.HasOne(e => e.Utilizador)
+                        .WithMany(u => u.TiposUtilizadores)
+                        .HasForeignKey(e => e.IdUtilizador);
+
+                  entity.HasOne(e => e.TipoUtilizador)
+                        .WithMany(t => t.Utilizadores)
+                        .HasForeignKey(e => e.IdTipoUtilizador);
+                  });
+                  #endregion
+
+                  #region Parceiros_Utilizadores
+                  modelBuilder.Entity<ParceiroUtilizador>(entity =>
+                  {
+                  entity.ToTable("Parceiros_Utilizadores");
+                  entity.HasKey(e => new { e.IdParceiro, e.IdUtilizador });
+
+                  entity.HasOne(pu => pu.Parceiro)
+                        .WithMany(p => p.ParceirosUtilizadores)
+                        .HasForeignKey(pu => pu.IdParceiro);
+
+                  entity.HasOne(pu => pu.UtilizadorTipo)
+                        .WithMany()
+                        .HasForeignKey(pu => pu.IdUtilizador);
+                  });
+                  #endregion
+
+                  #region TiposGrandeza
+                  modelBuilder.Entity<TipoGrandeza>(entity =>
+                  {
+                  entity.ToTable("TiposGrandeza");
+                  entity.HasKey(e => e.IdTipoGrandeza);
+
+                  entity.Property(e => e.Descricao)
+                        .HasColumnName("dsGrandeza")
+                        .HasMaxLength(20)
+                        .IsRequired();
+                  });
+                  #endregion
+
+                  #region TiposFarmaceutico
+                  modelBuilder.Entity<TipoFarmaceutico>(entity =>
+                  {
+                  entity.ToTable("TiposFarmaceutico");
+                  entity.HasKey(e => e.IdTipoFarmaceutico);
+
+                  entity.Property(e => e.Descricao)
+                        .HasColumnName("decricao")
+                        .HasMaxLength(40)
+                        .IsRequired();
+                  });
+                  #endregion
+
+                  #region TiposAgendamento
+                  modelBuilder.Entity<TipoAgendamento>(entity =>
+                  {
+                  entity.ToTable("TiposAgendamento");
+                  entity.HasKey(e => e.IdTipoAgendamento);
+
+                  entity.Property(e => e.Descricao)
+                        .HasMaxLength(40)
+                        .IsRequired();
+                  });
+                  #endregion
+
+                  #region Remedios
+                  modelBuilder.Entity<Remedio>(entity =>
+                  {
+                  entity.ToTable("Remedios");
+                  entity.HasKey(e => e.IdRemedio);
+
+                  entity.Property(e => e.Nome).HasColumnName("nmRemedio").HasMaxLength(40).IsRequired();
+                  entity.Property(e => e.DataCriacao).HasColumnName("dcRemedio").IsRequired();
+                  entity.Property(e => e.DataAtualizacao).HasColumnName("duRemedio").IsRequired();
+
+                  entity.HasOne(e => e.TipoGrandeza)
+                        .WithMany()
+                        .HasForeignKey(e => e.IdTipoGrandeza);
+                  });
+                  #endregion
+
+                  #region Posologias
+                  modelBuilder.Entity<Posologia>(entity =>
+                  {
+                  entity.ToTable("Posologias");
+                  entity.HasKey(e => e.IdPosologia);
+
+                  entity.Property(e => e.Quantidade).HasColumnName("qtdePosologia").IsRequired();
+                  entity.Property(e => e.QuantidadeDose).HasColumnName("qtdeDose").IsRequired();
+                  entity.Property(e => e.DataInicio).HasColumnName("diPosologia").IsRequired();
+                  entity.Property(e => e.DataFim).HasColumnName("dfPosologia").IsRequired();
+                  entity.Property(e => e.Intervalo).HasColumnName("intervalo").IsRequired();
+                  entity.Property(e => e.DiasSemana).HasColumnName("diasSemana").HasMaxLength(16).IsRequired();
+                  entity.Property(e => e.DiasUso).HasColumnName("diasUso").IsRequired();
+                  entity.Property(e => e.DiasPausa).HasColumnName("diasPausa").IsRequired();
+
+                  entity.HasOne(p => p.Remedio).WithMany().HasForeignKey(p => p.IdRemedio);
+                  entity.HasOne(p => p.Utilizador).WithMany().HasForeignKey(p => p.IdUtilizador);
+                  entity.HasOne(p => p.TipoFarmaceutico).WithMany().HasForeignKey(p => p.IdTipoFarmaceutico);
+                  entity.HasOne(p => p.TipoGrandeza).WithMany().HasForeignKey(p => p.IdTipoGrandeza);
+                  entity.HasOne(p => p.TipoAgendamento).WithMany().HasForeignKey(p => p.IdTipoAgendamento);
+                  });
+                  #endregion
+
+                  #region Horarios
+                  modelBuilder.Entity<Horario>(entity =>
+                  {
+                  entity.ToTable("Horarios");
+                  entity.HasKey(e => e.IdHorario);
+
+                  entity.Property(e => e.Hora).HasColumnName("horario").IsRequired();
+
+                  entity.HasOne(h => h.Posologia)
+                        .WithMany(p => p.Horarios)
+                        .HasForeignKey(h => h.IdPosologia);
+                  });
+                  #endregion
+
+                  #region Alarmes
+                  modelBuilder.Entity<Alarme>(entity =>
+                  {
+                  entity.ToTable("Alarmes");
+                  entity.HasKey(e => e.IdAlarme);
+
+                  entity.Property(e => e.DataHora).HasColumnName("dtHoraAlarme").IsRequired();
+                  entity.Property(e => e.Descricao).HasColumnName("dsAlarme").HasMaxLength(40).IsRequired();
+                  entity.Property(e => e.Status).HasColumnName("stAlarme").HasMaxLength(1).IsRequired();
+
+                  entity.HasOne(a => a.Posologia).WithMany().HasForeignKey(a => a.IdPosologia);
+                  });
+                  #endregion
+
+                  #region FormasPagamento
+                  modelBuilder.Entity<FormaPagamento>(entity =>
+                  {
+                  entity.ToTable("FormasPagamento");
+                  entity.HasKey(e => e.IdFormaPagamento);
+
+                  entity.Property(e => e.Descricao).HasColumnName("dsFormaPagamento").HasMaxLength(45).IsRequired();
+                  entity.Property(e => e.QtdeParcelas).HasColumnName("qtdeParcelas").IsRequired();
+                  entity.Property(e => e.QtdeMinParcelas).HasColumnName("qtdeMinParcelas").IsRequired();
+                  entity.Property(e => e.QtdeMaxParcelas).HasColumnName("qtdeMaxParcelas").IsRequired();
+                  });
+                  #endregion
+
+                  #region Promocoes
+                  modelBuilder.Entity<Promocao>(entity =>
+                  {
+                  entity.ToTable("Promocoes");
+                  entity.HasKey(e => e.IdPromocao);
+
+                  entity.Property(e => e.Descricao).HasColumnName("dsPromocao").HasMaxLength(50).IsRequired();
+                  entity.Property(e => e.DataInicio).HasColumnName("dtInicio").IsRequired();
+                  entity.Property(e => e.DataFim).HasColumnName("dtFim").IsRequired();
+                  entity.Property(e => e.Valor).HasColumnName("vlrPromocao");
+
+                  entity.HasOne(p => p.FormaPagamento).WithMany().HasForeignKey(p => p.IdFormaPagamento);
+                  entity.HasOne(p => p.Utilizador).WithMany().HasForeignKey(p => p.IdUtilizador);
+                  entity.HasOne(p => p.Remedio).WithMany().HasForeignKey(p => p.IdRemedio);
+                  });
                   #endregion
             }
       }

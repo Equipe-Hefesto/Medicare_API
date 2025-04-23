@@ -2,14 +2,13 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
+
 namespace Medicare_API.Models
 {
-    public class TipoUtilizador
+    public class TipoParentesco
     {
-        public int IdTipoUtilizador { get; set; }
+        public int IdTipoParentesco { get; set; }
         public string Descricao { get; set; } = null!;
-
-        public List<UtilizadorTipoUtilizador> Utilizadores { get; set; } = new();
     }
 
 }

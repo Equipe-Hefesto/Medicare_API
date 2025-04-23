@@ -6,30 +6,19 @@ using System.Threading.Tasks;
 
 namespace Medicare_API.Models
 {
-    public class Cuidador
-    {
-        public int IdCuidador { get; set; }
-        public Utilizador? CuidadorUtilizador { get; set; }
+  public class Cuidador
+{
+    public int IdCuidador { get; set; }
+    public int IdPaciente { get; set; }
 
-        public int IdUtilizador { get; set; }
-        public Utilizador? Utilizador { get; set; }
+    public DateTime DataInicio { get; set; }
+    public DateTime DataFim { get; set; }
+    public DateTime DataCriacao { get; set; }
+    public DateTime DataAtualizacao { get; set; }
+    public string Status { get; set; } = null!;
 
-        public DateTime DtInicio { get; set; }
-        public DateTime? DtFim { get; set; }
-        public DateTime DcCuidador { get; set; }
-        public DateTime DuCuidador { get; set; }
-        public string StCuidador { get; set; }
+    public Utilizador? CuidadorUser { get; set; }
+    public Utilizador? Paciente { get; set; }
+}
 
-        public Cuidador(int idCuidador, int idUtilizador, DateTime dtInicio, DateTime? dtFim, DateTime dcCuidador, DateTime duCuidador, string stCuidador)
-        {
-            IdCuidador = idCuidador;
-            IdUtilizador = idUtilizador;
-            DtInicio = dtInicio;
-            DtFim = dtFim;
-            DcCuidador = dcCuidador;
-            DuCuidador = duCuidador;
-            StCuidador = stCuidador;
-        }
-
-    }
 }

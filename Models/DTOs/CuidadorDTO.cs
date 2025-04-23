@@ -1,14 +1,25 @@
-using System.Text.Json.Serialization;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
-
-namespace Medicare_API.Models
+namespace Medicare_API.Models.DTOs
 {
     public class CuidadorDTO
     {
-        public required int IdCuidador { get; set; }
-        public required int IdUtilizador { get; set; }
-        public required DateTime DtInicio { get; set; }
-        public DateTime? DtFim { get; set; }
-        public required string StCuidador { get; set; }
+        public int IdCuidador { get; set; }
+        public int IdPaciente { get; set; }
+        public DateTime DataInicio { get; set; }
+        public DateTime DataFim { get; set; }
     }
+
+    public class CuidadorUpdateDTO
+    {
+        public int IdCuidador { get; set; }
+        public int IdPaciente { get; set; }
+        public DateTime DataInicio { get; set; }
+        public DateTime DataFim { get; set; }
+        public required string Status { get; set; }
+    }
+
 }

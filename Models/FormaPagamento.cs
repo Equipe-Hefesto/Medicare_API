@@ -7,13 +7,11 @@ namespace Medicare_API.Models
 {
     public class FormaPagamento
     {
-        public required int IdFormaPagamento { get; set; }
-        public required string Descricao { get; set; }
-        public required int QtdParcelas { get; set; }
-        public required int QtdMinimaParcelas { get; set; }
-
-        // Relacionamento
-        [JsonIgnore]
-        public List<Promocao> Promocoes { get; set; } = new();  
+        public int IdFormaPagamento { get; set; }
+        public string Descricao { get; set; } = null!;
+        public int QtdeParcelas { get; set; }
+        public int QtdeMinParcelas { get; set; }
+        public int QtdeMaxParcelas { get; set; }
     }
+
 }

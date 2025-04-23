@@ -1,13 +1,13 @@
 using Medicare_API.Data;
 using Medicare_API.Models;
+using Medicare_API.Models.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace Medicare_API.Models
+namespace Medicare_API.Controllers
 {
     [Route("[controller]")]
-    [ApiController]
-    public class TipoUtilizadorController : ControllerBase
+    public class TipoUtilizadorController : Controller
     {
         private readonly DataContext _context;
 
@@ -16,128 +16,119 @@ namespace Medicare_API.Models
             _context = context;
         }
 
-        #region GET TipoUtilizadores
+        #region GET
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TipoUtilizador>>> GetTipoUtilizadores()
+        public async Task<ActionResult<IEnumerable<TipoUtilizador>>> GetAllTipos()
         {
             try
             {
-                var tipos = await _context.TiposUtilizador.ToListAsync();
+                var tipos = await _context.TiposUtilizadores.ToListAsync();
                 if (tipos == null || tipos.Count == 0)
-                {
                     return NotFound();
-                }
 
                 return Ok(tipos);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Erro ao buscar tipos de utilizadores: {ex.Message}");
+                return StatusCode(500, $"Erro interno: {ex.Message}");
             }
         }
         #endregion
 
-        #region GET TipoUtilizador by ID
+        #region GET {id}
         [HttpGet("{id}")]
-        public async Task<ActionResult<TipoUtilizador>> GetTipoUtilizador(int id)
+        public async Task<ActionResult<TipoUtilizador>> GetTipoPorId(int id)
         {
             try
             {
-                var tipoUtilizador = await _context.TiposUtilizador.FindAsync(id);
-                if (tipoUtilizador == null)
-                {
+                var tipo = await _context.TiposUtilizadores.FindAsync(id);
+                if (tipo == null)
                     return NotFound();
-                }
 
-                return Ok(tipoUtilizador);
+                return Ok(tipo);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Erro ao buscar tipo de utilizador: {ex.Message}");
+                return StatusCode(500, $"Erro interno: {ex.Message}");
             }
         }
         #endregion
 
-        #region POST TipoUtilizador
+        #region POST
         [HttpPost]
-        public async Task<ActionResult<TipoUtilizador>> PostTipoUtilizador(TipoUtilizador tipoUtilizador)
+        public async Task<ActionResult> PostTipo([FromBody] TipoCreateDTO dto)
         {
             try
             {
-                _context.TiposUtilizador.Add(tipoUtilizador);
+                if (await _context.TiposUtilizadores.AnyAsync(tu => tu.Descricao.ToLower() == dto.Descricao.ToLower()))
+                {
+                    return BadRequest($"O tipo {dto.Descricao} informado já existe.");
+                }
+
+                var ultimoId = await _context.TiposUtilizadores.OrderByDescending(x => x.IdTipoUtilizador).Select(x => x.IdTipoUtilizador).FirstOrDefaultAsync();
+
+                var t = new TipoUtilizador();
+                t.IdTipoUtilizador = ultimoId + 1;
+                t.Descricao = dto.Descricao;
+
+                _context.TiposUtilizadores.Add(t);
                 await _context.SaveChangesAsync();
 
-                return CreatedAtAction(nameof(GetTipoUtilizador), new { id = tipoUtilizador.IdTipoUtilizador }, tipoUtilizador);
+                return CreatedAtAction(nameof(GetTipoPorId), new { id = t.IdTipoUtilizador }, t);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Erro ao criar tipo de utilizador: {ex.Message}");
+                return StatusCode(500, $"Erro ao criar item: {ex.Message}");
             }
         }
         #endregion
 
-        #region PUT TipoUtilizador
+        #region PUT
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutTipoUtilizador(int id, TipoUtilizador tipoUtilizador)
+        public async Task<ActionResult> PutTipo(int id, [FromBody] TipoUpdateDTO dto)
         {
             try
             {
-                if (id != tipoUtilizador.IdTipoUtilizador)
-                {
-                    return BadRequest("ID do tipo de utilizador não corresponde.");
-                }
+                if (!await _context.TiposUtilizadores.AnyAsync(x => x.IdTipoUtilizador == id))
+                    return NotFound($"O Tipo com o ID {id} não foi encontrado.");
 
-                _context.Entry(tipoUtilizador).State = EntityState.Modified;
+                // Atualize os campos
+                 var t = new TipoUtilizador();
+                t.IdTipoUtilizador = dto.IdTipo;
+                t.Descricao = dto.Descricao;
+
+
+                _context.TiposUtilizadores.Update(t);
                 await _context.SaveChangesAsync();
 
                 return NoContent();
             }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!TipoUtilizadorExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    return StatusCode(500, "Erro ao atualizar tipo de utilizador.");
-                }
-            }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Erro ao atualizar tipo de utilizador: {ex.Message}");
+                return StatusCode(500, $"Erro ao atualizar item: {ex.Message}");
             }
         }
         #endregion
 
-        #region DELETE TipoUtilizador
+        #region DELETE
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteTipoUtilizador(int id)
+        public async Task<ActionResult> DeleteTipo(int id)
         {
             try
             {
-                var tipoUtilizador = await _context.TiposUtilizador.FindAsync(id);
-                if (tipoUtilizador == null)
-                {
-                    return NotFound();
-                }
+                var tipo = await _context.TiposUtilizadores.FirstOrDefaultAsync(x => x.IdTipoUtilizador == id);
+                if (tipo == null)
+                    return NotFound($"O Tipo com o ID {id} não foi encontrado.");
 
-                _context.TiposUtilizador.Remove(tipoUtilizador);
+                _context.TiposUtilizadores.Remove(tipo);
                 await _context.SaveChangesAsync();
 
                 return NoContent();
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Erro ao excluir tipo de utilizador: {ex.Message}");
+                return StatusCode(500, $"Erro ao deletar item: {ex.Message}");
             }
-        }
-        #endregion
-
-        #region Métodos auxiliares
-        private bool TipoUtilizadorExists(int id)
-        {
-            return _context.TiposUtilizador.Any(e => e.IdTipoUtilizador == id);
         }
         #endregion
     }

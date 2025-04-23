@@ -1,16 +1,13 @@
 using Medicare_API.Data;
 using Medicare_API.Models;
+using Medicare_API.Models.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
-namespace Medicare_API.Models
+namespace Medicare_API.Controllers
 {
     [Route("[controller]")]
-    [ApiController]
-    public class ParceiroUtilizadorController : ControllerBase
+    public class ParceiroUtilizadorController : Controller
     {
         private readonly DataContext _context;
 
@@ -19,169 +16,151 @@ namespace Medicare_API.Models
             _context = context;
         }
 
-        #region GetParceiroUtilizadores
-
+        #region GET
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ParceiroUtilizador>>> GetParceiroUtilizadores()
+        public async Task<ActionResult<IEnumerable<Parceiro>>> GetAllRelacionamentos()
         {
             try
             {
-                var parceiroUtilizadores = await _context.ParceirosUtilizador
-                    .Include(pu => pu.Colaborador)
-                    .Include(pu => pu.Parceiro)
-                    .ToListAsync();
-
-                if (parceiroUtilizadores == null || parceiroUtilizadores.Count == 0)
+                var relacionamentos = await _context.ParceirosUtilizadores.ToListAsync();
+                if (relacionamentos == null || relacionamentos.Count == 0)
                 {
-                    return NotFound("Nenhum parceiro-utilizador encontrado.");
+                    return NotFound();
                 }
 
-                return Ok(parceiroUtilizadores);
+                return Ok(relacionamentos);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Erro interno no servidor: {ex.Message}");
+                return StatusCode(500, $"Erro interno: {ex.Message}");
             }
         }
-
         #endregion
 
-        #region GetParceiroUtilizador
-
-        [HttpGet("{id}")]
-        public async Task<ActionResult<ParceiroUtilizador>> GetParceiroUtilizador(int id)
+        #region GET {id}
+        [HttpGet("{idParceiro}/{idUtilizador}")]
+        public async Task<ActionResult<Parceiro>> GetRelacionamentoPorIds(int idParceiro, int idUtilizador)
         {
             try
             {
-                var parceiroUtilizador = await _context.ParceirosUtilizador
-                    .Include(pu => pu.Colaborador)
-                    .Include(pu => pu.Parceiro)
-                    .FirstOrDefaultAsync(pu => pu.IdParceiro == id);
-
-                if (parceiroUtilizador == null)
+                var relacionamento = await _context.ParceirosUtilizadores.FirstOrDefaultAsync(pc => pc.IdParceiro == idParceiro && pc.IdUtilizador == idUtilizador);
+                if (relacionamento == null)
                 {
-                    return NotFound($"Parceiro-Utilizador com o id {id} não encontrado.");
+                    return NotFound();
                 }
 
-                return Ok(parceiroUtilizador);
+                return Ok(relacionamento);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Erro interno no servidor: {ex.Message}");
+                return StatusCode(500, $"Erro interno: {ex.Message}");
             }
         }
-
         #endregion
 
-        #region PostParceiroUtilizador
-
+        #region POST
         [HttpPost]
-        public async Task<ActionResult<ParceiroUtilizador>> PostParceiroUtilizador([FromBody] ParceiroUtilizador parceiroUtilizador)
+        public async Task<ActionResult> PostRelacionamento([FromBody] ParceiroUtilizadorCreateDTO dto)
         {
-            if (parceiroUtilizador.IdParceiro == 0 || parceiroUtilizador.IdColaborador == 0)
-            {
-                return BadRequest("Os Ids de Parceiro e Colaborador são obrigatórios.");
-            }
-
             try
             {
-                // Buscar Parceiro e Colaborador
-                var parceiro = await _context.Parceiros.FirstOrDefaultAsync(p => p.IdParceiro == parceiroUtilizador.IdParceiro);
-                var colaborador = await _context.Utilizadores.FirstOrDefaultAsync(u => u.IdUtilizador == parceiroUtilizador.IdColaborador);
+                var parceiro = await _context.Parceiros.FirstOrDefaultAsync(u => u.IdParceiro == dto.IdParceiro);
+                if (parceiro == null)
+                    return BadRequest($"O Parceiro com o ID {dto.IdParceiro} não existe.");
 
-                if (parceiro == null || colaborador == null)
+
+                // Validar se o Tipo existe
+                var utilizador = await _context.Utilizadores.FirstOrDefaultAsync(t => t.IdUtilizador == dto.IdUtilizador);
+                if (utilizador == null)
+                    return BadRequest($"O Utilizador com o ID {dto.IdUtilizador} não existe.");
+
+                // Validar se o relacionamento já existe
+                if (await _context.ParceirosUtilizadores.AnyAsync(pu => pu.IdParceiro == dto.IdParceiro && pu.IdUtilizador == dto.IdUtilizador))
                 {
-                    return NotFound("Parceiro ou Colaborador não encontrado.");
+                    return BadRequest($"A relação IdParceiro {dto.IdParceiro} + IdUtilizador {dto.IdUtilizador} já existe.");
                 }
 
-                // Criar e salvar o novo ParceiroUtilizador
-                var novoParceiroUtilizador = new ParceiroUtilizador(
-                    idParceiro: parceiroUtilizador.IdParceiro,
-                    idColaborador: parceiroUtilizador.IdColaborador
-                );
+                var pc = new ParceiroUtilizador();
+                pc.IdParceiro = dto.IdParceiro;
+                pc.IdUtilizador = dto.IdUtilizador;
+                pc.Parceiro = parceiro;
+                pc.Utilizador = utilizador;
 
-                _context.ParceirosUtilizador.Add(novoParceiroUtilizador);
+                _context.ParceirosUtilizadores.Add(pc);
                 await _context.SaveChangesAsync();
 
-                return CreatedAtAction(nameof(GetParceiroUtilizador), new { id = novoParceiroUtilizador.IdParceiro }, novoParceiroUtilizador);
+                return CreatedAtAction(nameof(GetRelacionamentoPorIds), new { idParceiro = pc.IdParceiro, idUtilizador = pc.IdUtilizador }, pc);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Erro interno no servidor: {ex.Message}");
+                return StatusCode(500, $"Erro ao criar item: {ex.Message}");
             }
         }
-
         #endregion
 
-        #region PutParceiroUtilizador
-
-        [HttpPut("{idParceiro}+{idColaborador}")]
-        public async Task<ActionResult<ParceiroUtilizador>> PutParceiroUtilizador(int idParceiro, int idColaborador, [FromBody] ParceiroUtilizador parceiroUtilizador)
-        {
-            var parceiroExistente = await _context.Parceiros
-                    .FirstOrDefaultAsync(p => p.IdParceiro == idParceiro);
-
-            var colaboradorExistente = await _context.Utilizadores
-                                .FirstOrDefaultAsync(u => u.IdUtilizador == idColaborador);
-
-            if (parceiroExistente == null  || colaboradorExistente == null)
-            {
-                return NotFound($"Relação Parceiro com o id {idParceiro} e colaborador {idColaborador} não encontrada.");
-            }
-
-            try
-            {
-                // Buscar Parceiro e Colaborador
-                var parceiro = await _context.Parceiros.FirstOrDefaultAsync(p => p.IdParceiro == idParceiro);
-                var colaborador = await _context.Utilizadores.FirstOrDefaultAsync(u => u.IdUtilizador == idColaborador);
-
-                if (parceiro == null || colaborador == null)
-                {
-                    return NotFound("Parceiro ou Colaborador não encontrado.");
-                }
-
-                // Atualizar o ParceiroUtilizador
-                parceiroUtilizador.Parceiro = parceiro;
-                parceiroUtilizador.Colaborador = colaborador;
-
-                _context.ParceirosUtilizador.Update(parceiroUtilizador);
-                await _context.SaveChangesAsync();
-
-                return Ok(parceiroUtilizador);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Erro interno no servidor: {ex.Message}");
-            }
-        }
-
-        #endregion
-
-        #region DeleteParceiroUtilizador
-
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteParceiroUtilizador(int id)
+        #region PUT
+        [HttpPut("{idParceiro}/{idUtilizador}")]
+        public async Task<ActionResult> PutRelacionamento(int idParceiro, int idUtilizador, [FromBody] ParceiroUtilizadorUpdateDTO dto)
         {
             try
             {
-                var parceiroUtilizador = await _context.ParceirosUtilizador.FindAsync(id);
+                var parceiro = await _context.Parceiros.FirstOrDefaultAsync(u => u.IdParceiro == dto.IdParceiro);
+                if (parceiro == null)
+                    return BadRequest($"O Parceiro com o ID {dto.IdParceiro} não existe.");
 
-                if (parceiroUtilizador == null)
+
+                // Validar se o Tipo existe
+                var utilizador = await _context.Utilizadores.FirstOrDefaultAsync(t => t.IdUtilizador == dto.IdUtilizador);
+                if (utilizador == null)
+                    return BadRequest($"O Utilizador com o ID {dto.IdUtilizador} não existe.");
+
+                // Validar se o relacionamento já existe
+                var pc = await _context.ParceirosUtilizadores.FirstOrDefaultAsync(pu => pu.IdParceiro == dto.IdParceiro && pu.IdUtilizador == dto.IdUtilizador);
+                if (pc == null)
                 {
-                    return NotFound($"ParceiroUtilizador com o id {id} não encontrado.");
+                    return BadRequest($"A relação IdParceiro {dto.IdParceiro} + IdUtilizador {dto.IdUtilizador} não existe.");
                 }
+            
+                pc.IdParceiro = dto.IdParceiro;
+                pc.IdUtilizador = dto.IdUtilizador;
+                pc.Parceiro = parceiro;
+                pc.Utilizador = utilizador;
 
-                _context.ParceirosUtilizador.Remove(parceiroUtilizador);
+                _context.ParceirosUtilizadores.Update(pc);
                 await _context.SaveChangesAsync();
 
                 return NoContent();
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Erro interno no servidor: {ex.Message}");
+                return StatusCode(500, $"Erro ao atualizar item: {ex.Message}");
             }
         }
-
         #endregion
+
+        #region DELETE
+        [HttpDelete("{idParceiro}/{idUtilizador}")]
+        public async Task<ActionResult> DeleteParceiro(int idParceiro, int idUtilizador)
+        {
+            try
+            {
+                 var relacionamento = await _context.ParceirosUtilizadores.FirstOrDefaultAsync(pu => pu.IdParceiro == idParceiro && pu.IdUtilizador == idUtilizador);
+                if (relacionamento == null)
+                {
+                    return BadRequest($"A relação IdParceiro {idParceiro} + IdUtilizador {idUtilizador} não existe.");
+                }
+                _context.ParceirosUtilizadores.Remove(relacionamento);
+                await _context.SaveChangesAsync();
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Erro ao deletar item: {ex.Message}");
+            }
+        }
+        #endregion
+
+       
     }
 }

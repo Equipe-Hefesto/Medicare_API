@@ -1,18 +1,49 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Threading.Tasks;
 
-
-namespace Medicare_API.Models
+namespace Medicare_API.Models.DTOs
 {
-    public class PosologiaDTO
+    public class PosologiaCreateDTO
+    {
+        public required int IdRemedio { get; set; }
+        public required int IdUtilizador { get; set; }
+
+        public required int Quantidade { get; set; }
+        public required int IdTipoFarmaceutico { get; set; }
+        public required int QuantidadeDose { get; set; }
+        public required int IdTipoGrandeza { get; set; }
+
+
+        public required int IdTipoAgendamento { get; set; }
+        public required DateTime DataInicio { get; set; }
+        public DateTime DataFim { get; set; }
+        public string? Intervalo { get; set; }
+        public string? DiasSemana { get; set; }
+        public int DiasUso { get; set; }
+        public int DiasPausa { get; set; }
+    }
+
+    public class PosologiaUpdateDTO
     {
         public required int IdPosologia { get; set; }
-        public required int IdRemedio { get; set; } 
-        public required int IdUtilizador { get; set; } 
-        public required DateTime DtInicio { get; set; }
-        public DateTime? DtFim { get; set; }
-        public required int Intervalo { get; set; }
-        public required int QtdRemedio { get; set; } 
+        public required int IdRemedio { get; set; }
+        public required int IdUtilizador { get; set; }
+
+        public required int Quantidade { get; set; }
+        public required int IdTipoFarmaceutico { get; set; }
+        public required int QuantidadeDose { get; set; }
+        public required int IdTipoGrandeza { get; set; }
+
+
+        public required int IdTipoAgendamento { get; set; }
+        public required DateTime DataInicio { get; set; }
+        public DateTime DataFim { get; set; }
+        public string? Intervalo { get; set; }
+        public string? DiasSemana { get; set; }
+        public int DiasUso { get; set; }
+        public int DiasPausa { get; set; }
     }
+
 }
