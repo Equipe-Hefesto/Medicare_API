@@ -18,9 +18,13 @@ namespace Medicare_API.Models
         public DateTime DtNascimento { get; set; }
         public string Email { get; set; } = null!;
         public string Telefone { get; set; } = null!;
+        [NotMapped]
+        public string SenhaString { get; set; }
         public byte[]? SenhaHash { get; set; } = null!;
         public byte[]? SenhaSalt { get; set; } = null!;
         public string Username { get; set; } = null!;
+        [NotMapped]
+        public string Token { get; set; } = string.Empty;
 
         public List<UtilizadorTipoUtilizador> TiposUtilizadores { get; set; } = new();
         public List<Responsavel> Responsaveis { get; set; } = new();
