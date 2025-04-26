@@ -58,7 +58,7 @@ namespace Medicare_API.Controllers
 
         #region POST
         [HttpPost]
-        public async Task<ActionResult> PostPosologia([FromBody] PosologiaCreateDTO dto, List<Horario> horarios)
+        public async Task<ActionResult> PostPosologia([FromBody] PosologiaCreateDTO dto)
         {
             try
             {
@@ -102,17 +102,48 @@ namespace Medicare_API.Controllers
                 _context.Posologias.Add(p);
                 await _context.SaveChangesAsync();
 
-                // Associa os horários à posologia
-                foreach (var horario in horarios)
+                DateTime dataAtual = p.DataInicio;
+                DateTime dataFim = p.DataFim != default ? p.DataFim : DateTime.Now.AddMonths(1);
+
+
+                if (p.IdTipoAgendamento == 2 && dto.Horarios == null)
                 {
-                    horario.IdPosologia = p.IdPosologia;
-                    _context.Horarios.Add(horario);
+                    TimeSpan intervaloHoras = TimeSpan.Zero;
+                    intervaloHoras = TimeSpan.FromHours(int.Parse(p.Intervalo));
+
+                    while (dataAtual <= dataFim)
+                    {
+                        var h = new Horario();
+                        h.Hora = TimeOnly.FromDateTime(dataAtual);
+                        h.IdPosologia = p.IdPosologia;
+                        h.Posologia = p;
+
+                        _context.Horarios.Add(h);
+                        await _context.SaveChangesAsync();
+                        dataAtual = dataAtual.Add(intervaloHoras);
+
+                    }
                 }
+                else
+                {
+                    // Associa os horários à posologia
+                    foreach (var horario in dto.Horarios!)
+                    {
+                        var h = new Horario();
+                        h.Hora = horario;
+                        h.IdPosologia = p.IdPosologia;
+                        h.Posologia = p;
+
+                        _context.Horarios.Add(h);
+                        await _context.SaveChangesAsync();
+                    }
+                }
+  
 
                 await _context.SaveChangesAsync();
 
                 // Cria os alarmes para a posologia
-                var alarmes = GerarAlarmes(p, horarios);
+                var alarmes = GerarAlarmes(p, await _context.Horarios.Where(h => h.IdPosologia == p.IdPosologia).ToListAsync());
                 foreach (var alarme in alarmes)
                 {
                     _context.Alarmes.Add(alarme);
@@ -224,7 +255,7 @@ namespace Medicare_API.Controllers
                 {
                     foreach (var horario in horarios)
                     {
-                        var dataHora = dataAtual.Date.Add(horario.Hora.TimeOfDay);
+                        var dataHora = dataAtual.Date.Add(horario.Hora.ToTimeSpan());
                         if (dataHora >= posologia.DataInicio && dataHora <= dataFim)
                         {
                             alarmes.Add(new Alarme

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Medicare_API.Models
 {
   public class Cuidador
-{
+  {
     public int IdCuidador { get; set; }
     public int IdPaciente { get; set; }
 
@@ -19,6 +19,6 @@ namespace Medicare_API.Models
 
     public Utilizador? CuidadorUser { get; set; }
     public Utilizador? Paciente { get; set; }
-}
+  }
 
 }

@@ -77,7 +77,7 @@ namespace Medicare_API.Controllers
                 var ultimoId = await _context.Utilizadores.OrderByDescending(x => x.IdUtilizador).Select(x => x.IdUtilizador).FirstOrDefaultAsync();
 
                 Criptografia.CriarPasswordHash(dto.SenhaString, out byte[] hash, out byte[] salt);
-                
+
                 var u = new Utilizador();
 
                 u.IdUtilizador = ultimoId + 1;
@@ -87,6 +87,7 @@ namespace Medicare_API.Controllers
                 u.DtNascimento = dto.DtNascimento;
                 u.Email = dto.Email;
                 u.Telefone = dto.Telefone;
+                u.Username = dto.Username;
                 u.SenhaHash = hash;
                 u.SenhaSalt = salt;
 
@@ -112,7 +113,7 @@ namespace Medicare_API.Controllers
                     return NotFound($"O Utilizador com o ID {id} não foi encontrado.");
 
                 Criptografia.CriarPasswordHash(dto.SenhaString, out byte[] hash, out byte[] salt);
-                
+
                 var u = new Utilizador();
 
                 u.CPF = dto.CPF;
@@ -121,6 +122,7 @@ namespace Medicare_API.Controllers
                 u.DtNascimento = dto.DtNascimento;
                 u.Email = dto.Email;
                 u.Telefone = dto.Telefone;
+                u.Username = dto.Username;
                 u.SenhaHash = hash;
                 u.SenhaSalt = salt;
 
@@ -155,6 +157,42 @@ namespace Medicare_API.Controllers
             {
                 return StatusCode(500, $"Erro ao deletar Utilizador: {ex.Message}");
             }
+        }
+        #endregion
+
+        #region Autenticar
+        [HttpPost("Autenticar")]
+        public async Task<IActionResult> AutenticarUsuario(UtilizadorAutenticarDTO credenciais)
+
+        {
+            try
+            {
+                Utilizador? utilizador = await _context.Utilizadores
+                   .FirstOrDefaultAsync(x => x.Username.Equals(credenciais.Username) || x.Email.Equals(credenciais.Email));
+
+                if (utilizador == null)
+                {
+                    throw new System.Exception("Usuário não encontrado.");
+                }
+                else
+                {
+                    if (!Criptografia.VerificarPasswordHash(credenciais.SenhaString, utilizador.SenhaHash!, utilizador.SenhaSalt!))
+                    {
+                        throw new System.Exception("Senha incorreta.");
+                    }
+                    else
+                    {
+                        await _context.SaveChangesAsync();
+                        return Ok(utilizador);
+                    }
+                }
+
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(ex.Message + " - " + ex.InnerException);
+            }
+
         }
         #endregion
     }

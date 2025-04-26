@@ -1,4 +1,4 @@
-using Medicare_API.Controller;
+using Medicare_API.Controllers;
 using Medicare_API.Data;
 using Medicare_API.Models;
 using Microsoft.EntityFrameworkCore;

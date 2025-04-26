@@ -22,6 +22,7 @@ namespace Medicare_API.Models
         public byte[]? SenhaSalt { get; set; } = null!;
         public string Username { get; set; } = null!;
 
+        [JsonIgnore]
         public List<UtilizadorTipoUtilizador> TiposUtilizadores { get; set; } = new();
         public List<Responsavel> Responsaveis { get; set; } = new();
         public List<Cuidador> Cuidadores { get; set; } = new();

@@ -67,10 +67,7 @@ namespace Medicare_API.Controllers
 
                 var posologia = await _context.Posologias.FirstOrDefaultAsync(p => p.IdPosologia == dto.IdPosologia);
 
-                var ultimoId = await _context.Horarios.OrderByDescending(x => x.IdHorario).Select(x => x.IdHorario).FirstOrDefaultAsync();
-
                 var h = new Horario();
-                h.IdHorario = ultimoId + 1;
                 h.IdPosologia = dto.IdPosologia;
                 h.Hora = dto.Hora;
                 h.Posologia = posologia;
@@ -78,7 +75,7 @@ namespace Medicare_API.Controllers
                 _context.Horarios.Add(h);
                 await _context.SaveChangesAsync();
 
-                return CreatedAtAction(nameof(GetHorarioPorId), new { id = h.IdHorario }, h);
+                return CreatedAtAction(nameof(GetHorarioPorId), new { id = h.IdPosologia, h.Hora }, h);
             }
             catch (Exception ex)
             {
@@ -101,7 +98,6 @@ namespace Medicare_API.Controllers
 
                 // Atualize os campos
                 var h = new Horario();
-                h.IdHorario = dto.IdHorario;
                 h.IdPosologia = dto.IdPosologia;
                 h.Hora = dto.Hora;
                 h.Posologia = posologia;
@@ -119,12 +115,12 @@ namespace Medicare_API.Controllers
         #endregion
 
         #region DELETE
-        [HttpDelete("{id}")]
-        public async Task<ActionResult> DeleteHorario(int id)
+        [HttpDelete("{id}/{hora}")]
+        public async Task<ActionResult> DeleteHorario(int id, TimeOnly hora)
         {
             try
             {
-                var horario = await _context.Horarios.FirstOrDefaultAsync(x => x.IdHorario == id);
+                var horario = await _context.Horarios.FirstOrDefaultAsync(x => x.IdPosologia == id && x.Hora == hora);
                 if (horario == null)
                     return NotFound($"O Horario com o ID {id} não foi encontrado.");
 
