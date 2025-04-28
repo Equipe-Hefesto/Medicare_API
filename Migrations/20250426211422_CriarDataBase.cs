@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Medicare_API.Migrations
 {
     /// <inheritdoc />
-    public partial class CreateDataBase : Migration
+    public partial class CriarDataBase : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

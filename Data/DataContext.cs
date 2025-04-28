@@ -379,7 +379,7 @@ namespace Medicare_API.Data
                         entity.Property(e => e.Descricao).HasColumnName("dsPromocao").HasMaxLength(50).IsRequired();
                         entity.Property(e => e.DataInicio).HasColumnName("dtInicio").IsRequired();
                         entity.Property(e => e.DataFim).HasColumnName("dtFim").IsRequired();
-                        entity.Property(e => e.Valor).HasColumnName("vlrPromocao");
+                        entity.Property(e => e.Valor).HasColumnName("vlrPromocao").HasColumnType("decimal(18,2)").IsRequired();
 
                         entity.HasOne(p => p.FormaPagamento).WithMany().HasForeignKey(p => p.IdFormaPagamento);
                         entity.HasOne(p => p.Utilizador).WithMany().HasForeignKey(p => p.IdUtilizador);

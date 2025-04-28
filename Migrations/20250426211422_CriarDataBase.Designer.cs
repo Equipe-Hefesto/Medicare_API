@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Medicare_API.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20250426034129_CreateDataBase")]
-    partial class CreateDataBase
+    [Migration("20250426211422_CriarDataBase")]
+    partial class CriarDataBase
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
