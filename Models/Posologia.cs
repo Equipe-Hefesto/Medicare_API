@@ -20,7 +20,7 @@ namespace Medicare_API.Models
         public DateTime DataInicio { get; set; }
         public DateTime DataFim { get; set; }
         public string Intervalo { get; set; } = null!;
-        public string DiasSemana { get; set; } = null!;
+        public List<string> DiasSemana { get; set; } = new();
         public int DiasUso { get; set; }
         public int DiasPausa { get; set; }
 
@@ -31,6 +31,7 @@ namespace Medicare_API.Models
         public TipoAgendamento TipoAgendamento { get; set; } = null!;
         [JsonIgnore]
         public List<Horario> Horarios { get; set; } = new();
+        [JsonIgnore]
         public List<Alarme> Alarmes { get; set; } = new();
 
     }

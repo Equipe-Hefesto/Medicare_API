@@ -102,160 +102,22 @@ namespace Medicare_API.Controllers
                 _context.Posologias.Add(p);
                 await _context.SaveChangesAsync();
 
-                DateTime dtAtual = p.DataInicio;
-                var intervaloHoras = TimeSpan.FromHours(int.Parse(p.Intervalo));
-                List<string> horariosLista = new List<string>();
+                await PostHorarios(p, dto.Horarios);
 
-                while (dtAtual <= p.DataInicio.Date.AddDays(1).AddHours(8))
+                switch (p.IdTipoAgendamento)
                 {
-                    horariosLista.Add(TimeOnly.FromDateTime(dtAtual).ToString());
-                    dtAtual = dtAtual.Add(intervaloHoras);
-                }
-
-
-
-                // Associa os horários à posologia
-                foreach (var horario in horariosLista)
-                {
-                    var hora = TimeOnly.Parse(horario);
-
-                    bool jaExiste = await _context.Horarios.AnyAsync(h => h.IdPosologia == p.IdPosologia && h.Hora == hora);
-
-                    if (!jaExiste)
-                    {
-                        var h = new Horario();
-                        h.Hora = TimeOnly.Parse(horario);
-                        h.IdPosologia = p.IdPosologia;
-                        h.Posologia = p;
-
-                        _context.Horarios.Add(h);
-                        await _context.SaveChangesAsync();
-                    }
-                }
-
-
-                /*   var horarios = await _context.Horarios.Where(h => h.IdPosologia == p.IdPosologia).ToListAsync();
-                   var ultimoIdAlarme = await _context.Alarmes.OrderByDescending(a => a.IdAlarme).Select(a => a.IdAlarme).FirstOrDefaultAsync();
-
-                   // aqui você guarda o próximo id a ser usado
-                   var proximoIdAlarme = ultimoIdAlarme + 1;
-
-                   DateTime dataAtual = p.DataInicio;
-                   DateTime dataFim = p.DataFim != default ? p.DataFim : DateTime.Now.AddMonths(1);
-
-                   while (dataAtual <= dataFim)
-                   {   
-
-                       foreach (var horario in horarios)
-                       {
-                           var dataHora = dataAtual.Date.Add(horario.Hora.ToTimeSpan());  // Atribui a hora do alarme
-
-                           var a = new Alarme();
-                           a.IdAlarme = proximoIdAlarme++; // Incrementa a cada novo alarme
-                           a.IdPosologia = p.IdPosologia;
-                           a.Descricao = $"Tomar {p.Quantidade} {p.IdTipoFarmaceutico} de {p.QuantidadeDose} {p.IdTipoGrandeza} de {GetNomeRemedio(p.IdRemedio)}";
-                           a.DataHora = dataHora;
-                           a.Status = "A";
-                           a.Posologia = p;
-
-                           _context.Alarmes.Add(a);
-                       }
-
-                       dataAtual = dataAtual.AddDays(1);
-                   }*/
-
-                /*var horarios = await _context.Horarios.Where(h => h.IdPosologia == p.IdPosologia).ToListAsync();
-                 var ultimoIdAlarme = await _context.Alarmes.OrderByDescending(a => a.IdAlarme).Select(a => a.IdAlarme).FirstOrDefaultAsync();
-
-                 // aqui você guarda o próximo id a ser usado
-                 var proximoIdAlarme = ultimoIdAlarme + 1;
-
-                 DateTime dataAtual = p.DataInicio;
-                 DateTime dataFim = p.DataFim != default ? p.DataFim : DateTime.Now.AddMonths(1);
-
-                 while (dataAtual <= dataFim)
-                 {
-                     for (int i = 0; i < p.DiasUso; i++)
-                     {
-                         foreach (var horario in horarios)
-                         {
-                             var dataHora = dataAtual.Date.Add(horario.Hora.ToTimeSpan());  // Atribui a hora do alarme
-
-                             var a = new Alarme();
-                             a.IdAlarme = proximoIdAlarme++; // Incrementa a cada novo alarme
-                             a.IdPosologia = p.IdPosologia;
-                             a.Descricao = $"Tomar {p.Quantidade} {p.IdTipoFarmaceutico} de {p.QuantidadeDose} {p.IdTipoGrandeza} de {GetNomeRemedio(p.IdRemedio)}";
-                             a.DataHora = dataHora;
-                             a.Status = "A";
-                             a.Posologia = p;
-
-                             _context.Alarmes.Add(a);
-                         }
-
-                         dataAtual = dataAtual.AddDays(1);
-                     }
-                     for (int i = 0; i < p.DiasPausa; i++)
-                     {
-                         dataAtual = dataAtual.AddDays(1);
-
-                     }
-
-                 }*/
-
-
-
-                var horarios = await _context.Horarios.Where(h => h.IdPosologia == p.IdPosologia).ToListAsync();
-                var ultimoIdAlarme = await _context.Alarmes.OrderByDescending(a => a.IdAlarme).Select(a => a.IdAlarme).FirstOrDefaultAsync();
-
-                // aqui você guarda o próximo id a ser usado
-                var proximoIdAlarme = ultimoIdAlarme + 1;
-
-                DateTime dataAtual = p.DataInicio;
-                DateTime dataFim = p.DataFim != default ? p.DataFim : DateTime.Now.AddMonths(1);
-                var mapDias = new Dictionary<string, DayOfWeek>(StringComparer.OrdinalIgnoreCase)
-                {
-                    { "dom", DayOfWeek.Sunday },
-                    { "seg", DayOfWeek.Monday },
-                    { "ter", DayOfWeek.Tuesday },
-                    { "qua", DayOfWeek.Wednesday },
-                    { "qui", DayOfWeek.Thursday },
-                    { "sex", DayOfWeek.Friday },
-                    { "sab", DayOfWeek.Saturday }
-                };
-
-                List<string> diasSelecionados = new List<string> { "seg", "qua", "sex" };
-
-                List<DayOfWeek> diasEnum = diasSelecionados
-                    .Select(dia => mapDias[dia])
-                    .ToList();
-                while (dataAtual <= dataFim)
-                {
-                    int numeroDia = (int)dataAtual.DayOfWeek;
-                    if (true)
-                    {
-                        foreach (var horario in horarios)
-                        {
-                            var dataHora = dataAtual.Date.Add(horario.Hora.ToTimeSpan());  // Atribui a hora do alarme
-
-                            var a = new Alarme();
-                            a.IdAlarme = proximoIdAlarme++; // Incrementa a cada novo alarme
-                            a.IdPosologia = p.IdPosologia;
-                            a.Descricao = $"Tomar {p.Quantidade} {p.IdTipoFarmaceutico} de {p.QuantidadeDose} {p.IdTipoGrandeza} de {GetNomeRemedio(p.IdRemedio)}";
-                            a.DataHora = dataHora;
-                            a.Status = "A";
-                            a.Posologia = p;
-
-                            _context.Alarmes.Add(a);
-                        }
-
-                        dataAtual = dataAtual.AddDays(1);
-                    }
-                    for (int i = 0; i < p.DiasPausa; i++)
-                    {
-                        dataAtual = dataAtual.AddDays(1);
-
-                    }
-
+                    case 1:
+                        await AgendamentoPorHora(p);
+                        break;
+                    case 2:
+                        await AgendamentoPorHora(p);
+                        break;
+                    case 3:
+                        await AgendamentoPorDiaSemana(p);
+                        break;
+                    case 4:
+                        await AgendamentoPorCiclo(p);
+                        break;
                 }
 
                 await _context.SaveChangesAsync();
@@ -283,16 +145,16 @@ namespace Medicare_API.Controllers
                     return BadRequest($"Não existe uma posologia para o Remédio {dto.IdRemedio} e Utilizador {dto.IdUtilizador} iniciada na data {dto.DataInicio}.");
                 }
 
+                var p = await _context.Posologias.FirstOrDefaultAsync(p => p.IdPosologia == id);
+                if (p == null)
+                    return NotFound($"Posologia com ID {id} não encontrada.");
+
                 var remedio = await _context.Remedios.FirstOrDefaultAsync(r => r.IdRemedio == dto.IdRemedio);
                 var utilizador = await _context.Utilizadores.FirstOrDefaultAsync(u => u.IdUtilizador == dto.IdUtilizador);
                 var tipoFarmaceutico = await _context.TiposFarmaceutico.FirstOrDefaultAsync(f => f.IdTipoFarmaceutico == dto.IdTipoFarmaceutico);
                 var tipoGrandeza = await _context.TiposGrandeza.FirstOrDefaultAsync(g => g.IdTipoGrandeza == dto.IdTipoGrandeza);
                 var tipoAgendamento = await _context.TiposAgendamento.FirstOrDefaultAsync(a => a.IdTipoAgendamento == dto.IdTipoAgendamento);
 
-
-                var p = new Posologia();
-
-                p.IdPosologia = dto.IdPosologia;
                 p.IdRemedio = dto.IdRemedio;
                 p.IdUtilizador = dto.IdUtilizador;
                 p.IdTipoFarmaceutico = dto.IdTipoFarmaceutico;
@@ -303,7 +165,7 @@ namespace Medicare_API.Controllers
                 p.DataInicio = dto.DataInicio;
                 p.DataFim = dto.DataFim;
                 p.Intervalo = dto.Intervalo!;
-                p.DiasSemana = dto.DiasSemana!;
+                p.DiasSemana = dto.DiasSemana;
                 p.DiasUso = dto.DiasUso;
                 p.DiasPausa = dto.DiasPausa;
                 p.Remedio = remedio!;
@@ -315,8 +177,32 @@ namespace Medicare_API.Controllers
                 _context.Posologias.Update(p);
                 await _context.SaveChangesAsync();
 
+                var horarios = _context.Horarios.Where(h => h.IdPosologia == p.IdPosologia).ToList();
+                var alarmes = _context.Alarmes.Where(a => a.IdPosologia == p.IdPosologia).ToList();
 
-                return NoContent();
+                _context.Horarios.RemoveRange(horarios);
+                _context.Alarmes.RemoveRange(alarmes);
+                await _context.SaveChangesAsync();
+
+                await PostHorarios(p, dto.Horarios);
+
+                switch (p.IdTipoAgendamento)
+                {
+                    case 1:
+                        await AgendamentoPorHora(p);
+                        break;
+                    case 2:
+                        await AgendamentoPorHora(p);
+                        break;
+                    case 3:
+                        await AgendamentoPorDiaSemana(p);
+                        break;
+                    case 4:
+                        await AgendamentoPorCiclo(p);
+                        break;
+                }
+
+                return Ok();
             }
             catch (Exception ex)
             {
@@ -353,6 +239,152 @@ namespace Medicare_API.Controllers
         {
             return _context.Remedios.Find(idRemedio)?.Nome ?? "Medicamento";
         }
+        private string GetTipoFarmaceutico(int IdTipoFarmaceutico)
+        {
+            return _context.TiposFarmaceutico.Find(IdTipoFarmaceutico)?.Descricao ?? "Tipo Farmaceutico";
+        }
+        private string GetTipoGrandeza(int IdTipoGrandeza)
+        {
+            return _context.TiposGrandeza.Find(IdTipoGrandeza)?.Descricao ?? "Tipo Gradeza";
+        }
+
+
+        private async Task PostHorarios(Posologia p, List<string> lista)
+        {
+            List<string> horarios = new List<string>();
+
+            if (lista == null || p.IdTipoAgendamento == 2)
+            {
+                DateTime dtAtual = p.DataInicio;
+                var intervaloHoras = TimeSpan.FromHours(int.Parse(p.Intervalo));
+
+                while (dtAtual <= p.DataInicio.AddHours(24))
+                {
+                    horarios.Add(TimeOnly.FromDateTime(dtAtual).ToString());
+                    dtAtual = dtAtual.Add(intervaloHoras);
+                }
+            }
+            else horarios = lista;
+
+            // Associa os horários à posologia
+            foreach (var horario in horarios)
+            {
+                var hora = TimeOnly.Parse(horario);
+
+                bool jaExiste = await _context.Horarios.AnyAsync(h => h.IdPosologia == p.IdPosologia && h.Hora == hora);
+
+                if (!jaExiste)
+                {
+                    var h = new Horario();
+                    h.Hora = TimeOnly.Parse(horario);
+                    h.IdPosologia = p.IdPosologia;
+                    h.Posologia = p;
+
+                    _context.Horarios.Add(h);
+                    await _context.SaveChangesAsync();
+                }
+            }
+        }
+
+        private async Task PostAlarme(Posologia p, DateTime dtHora)
+        {
+            var ultimoId = await _context.Alarmes.OrderByDescending(x => x.IdAlarme).Select(x => x.IdAlarme).FirstOrDefaultAsync();
+
+            var a = new Alarme();
+            a.IdAlarme = ultimoId + 1;
+            a.IdPosologia = p.IdPosologia;
+            a.Descricao = $"Tomar {p.Quantidade} {GetTipoFarmaceutico(p.IdTipoFarmaceutico)} de {p.QuantidadeDose} {GetTipoGrandeza(p.IdTipoGrandeza)} de {GetNomeRemedio(p.IdRemedio)}";
+            a.DataHora = dtHora;
+            a.Status = "A";
+            a.Posologia = p;
+
+            _context.Alarmes.Add(a);
+            await _context.SaveChangesAsync();
+
+        }
+
+        private async Task AgendamentoPorHora(Posologia p)
+        {
+            var horarios = await _context.Horarios.Where(h => h.IdPosologia == p.IdPosologia).ToListAsync();
+
+            DateTime dataAtual = p.DataInicio;
+            DateTime dataFim = p.DataFim != default ? p.DataFim : DateTime.Now.AddMonths(1);
+
+            while (dataAtual <= dataFim)
+            {
+                foreach (var horario in horarios)
+                {
+                    var dataHora = dataAtual.Date.Add(horario.Hora.ToTimeSpan());
+                    if (dataHora > p.DataFim)
+                        continue;
+                    await PostAlarme(p, dataHora);
+                }
+                dataAtual = dataAtual.AddDays(1);
+            }
+        }
+
+        private async Task AgendamentoPorDiaSemana(Posologia p)
+        {
+            var horarios = await _context.Horarios.Where(h => h.IdPosologia == p.IdPosologia).ToListAsync();
+            DateTime dataAtual = p.DataInicio;
+            DateTime dataFim = p.DataFim != default ? p.DataFim : DateTime.Now.AddMonths(1);
+
+            while (dataAtual <= dataFim)
+            {
+                var diaAtual = dataAtual.DayOfWeek;
+
+                // Converte o valor numérico de DayOfWeek para o nome do dia da semana em português
+                string diaAtualNome = diaAtual switch
+                {
+                    DayOfWeek.Sunday => "Domingo",
+                    DayOfWeek.Monday => "Segunda",
+                    DayOfWeek.Tuesday => "Terça",
+                    DayOfWeek.Wednesday => "Quarta",
+                    DayOfWeek.Thursday => "Quinta",
+                    DayOfWeek.Friday => "Sexta",
+                    DayOfWeek.Saturday => "Sábado",
+                    _ => throw new InvalidOperationException("Dia inválido")
+                };
+
+                if (p.DiasSemana.Contains(diaAtualNome))
+                {
+                    foreach (var horario in horarios)
+                    {
+                        var dataHora = dataAtual.Date.Add(horario.Hora.ToTimeSpan());  // Atribui a hora do alarme
+                        if (dataHora > p.DataFim)
+                            continue;
+                        await PostAlarme(p, dataHora);
+                    }
+                    dataAtual = dataAtual.AddDays(1);
+                }
+                else dataAtual = dataAtual.AddDays(1);
+            }
+        }
+
+        private async Task AgendamentoPorCiclo(Posologia p)
+        {
+            var horarios = await _context.Horarios.Where(h => h.IdPosologia == p.IdPosologia).ToListAsync();
+            DateTime dataAtual = p.DataInicio;
+            DateTime dataFim = p.DataFim != default ? p.DataFim : DateTime.Now.AddMonths(1);
+
+            while (dataAtual <= dataFim)
+            {
+                int numeroDia = (int)dataAtual.DayOfWeek;
+                for (int i = 0; i < p.DiasUso; i++)
+                {
+                    foreach (var horario in horarios)
+                    {
+                        var dataHora = dataAtual.Date.Add(horario.Hora.ToTimeSpan());
+                        if (dataHora > p.DataFim)
+                            continue;
+                        await PostAlarme(p, dataHora);
+                    }
+                    dataAtual = dataAtual.AddDays(1);
+                }
+                for (int i = 0; i < p.DiasPausa; i++) dataAtual = dataAtual.AddDays(1);
+            }
+        }
+
         #endregion
     }
 }
