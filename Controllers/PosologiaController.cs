@@ -102,7 +102,7 @@ namespace Medicare_API.Controllers
                 _context.Posologias.Add(p);
                 await _context.SaveChangesAsync();
 
-<<<<<<< HEAD
+
                 await PostHorarios(p, dto.Horarios);
 
                 switch (p.IdTipoAgendamento)
@@ -120,9 +120,8 @@ namespace Medicare_API.Controllers
                         await AgendamentoPorCiclo(p);
                         break;
                 }
-=======
 
->>>>>>> 9b51540451ac453a724cd655a873a49075b35a19
+
 
                 await _context.SaveChangesAsync();
 
@@ -243,7 +242,6 @@ namespace Medicare_API.Controllers
         {
             return _context.Remedios.Find(idRemedio)?.Nome ?? "Medicamento";
         }
-<<<<<<< HEAD
         private string GetTipoFarmaceutico(int IdTipoFarmaceutico)
         {
             return _context.TiposFarmaceutico.Find(IdTipoFarmaceutico)?.Descricao ?? "Tipo Farmaceutico";
@@ -307,7 +305,8 @@ namespace Medicare_API.Controllers
             await _context.SaveChangesAsync();
 
         }
-
+        #endregion
+        #region Criação agendamentos
         private async Task AgendamentoPorHora(Posologia p)
         {
             var horarios = await _context.Horarios.Where(h => h.IdPosologia == p.IdPosologia).ToListAsync();
@@ -389,19 +388,7 @@ namespace Medicare_API.Controllers
                 for (int i = 0; i < p.DiasPausa; i++) dataAtual = dataAtual.AddDays(1);
             }
         }
-
-=======
-         private string GetTipoFarmaceutico(int IdTipoFarmaceutico)
-        {
-            return _context.TiposFarmaceutico.Find(IdTipoFarmaceutico)?.Descricao ?? "Tipo Farmaceutico";
-        }
-          private string GetTipoGrandeza(int IdTipoGrandeza)
-        {
-            return _context.TiposGrandeza.Find(IdTipoGrandeza)?.Descricao ?? "Tipo Gradeza";
-        }
         
-        
->>>>>>> 9b51540451ac453a724cd655a873a49075b35a19
         #endregion
     }
 }
