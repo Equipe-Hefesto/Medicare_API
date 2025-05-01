@@ -32,7 +32,11 @@
                 }
 
 
+<<<<<<< HEAD
                 /* var horarios = await _context.Horarios.Where(h => h.IdPosologia == p.IdPosologia).ToListAsync();
+=======
+                /*   var horarios = await _context.Horarios.Where(h => h.IdPosologia == p.IdPosologia).ToListAsync();
+>>>>>>> 9b51540451ac453a724cd655a873a49075b35a19
                    var ultimoIdAlarme = await _context.Alarmes.OrderByDescending(a => a.IdAlarme).Select(a => a.IdAlarme).FirstOrDefaultAsync();
 
                    // aqui você guarda o próximo id a ser usado
