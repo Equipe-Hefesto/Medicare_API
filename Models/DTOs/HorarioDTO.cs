@@ -8,14 +8,14 @@ namespace Medicare_API.Models.DTOs
     public class HorarioCreateDTO
     {
         public int IdPosologia { get; set; }
-        public required DateTime Hora { get; set; }
+        public TimeOnly Hora { get; set; }
     }
 
     public class HorarioUpdateDTO
     {
         public int IdHorario { get; set; }
         public int IdPosologia { get; set; }
-        public required DateTime Hora { get; set; }
+        public required TimeOnly Hora { get; set; }
     }
 
 }

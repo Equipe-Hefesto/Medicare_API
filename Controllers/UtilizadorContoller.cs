@@ -1,9 +1,13 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using Medicare_API.Data;
 using Medicare_API.Models;
 using Medicare_API.Models.DTOs;
 using Medicare_API.Models.Utils;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 
 namespace Medicare_API.Controllers
@@ -13,10 +17,12 @@ namespace Medicare_API.Controllers
     public class UtilizadorController : ControllerBase
     {
         private readonly DataContext _context;
+        private readonly IConfiguration _configuration;
 
-        public UtilizadorController(DataContext context)
+        public UtilizadorController(DataContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
         #region GET
@@ -77,7 +83,7 @@ namespace Medicare_API.Controllers
                 var ultimoId = await _context.Utilizadores.OrderByDescending(x => x.IdUtilizador).Select(x => x.IdUtilizador).FirstOrDefaultAsync();
 
                 Criptografia.CriarPasswordHash(dto.SenhaString, out byte[] hash, out byte[] salt);
-                
+
                 var u = new Utilizador();
 
                 u.IdUtilizador = ultimoId + 1;
@@ -87,6 +93,7 @@ namespace Medicare_API.Controllers
                 u.DtNascimento = dto.DtNascimento;
                 u.Email = dto.Email;
                 u.Telefone = dto.Telefone;
+                u.Username = dto.Username;
                 u.SenhaHash = hash;
                 u.SenhaSalt = salt;
 
@@ -112,7 +119,7 @@ namespace Medicare_API.Controllers
                     return NotFound($"O Utilizador com o ID {id} não foi encontrado.");
 
                 Criptografia.CriarPasswordHash(dto.SenhaString, out byte[] hash, out byte[] salt);
-                
+
                 var u = new Utilizador();
 
                 u.CPF = dto.CPF;
@@ -121,6 +128,7 @@ namespace Medicare_API.Controllers
                 u.DtNascimento = dto.DtNascimento;
                 u.Email = dto.Email;
                 u.Telefone = dto.Telefone;
+                u.Username = dto.Username;
                 u.SenhaHash = hash;
                 u.SenhaSalt = salt;
 
@@ -157,5 +165,88 @@ namespace Medicare_API.Controllers
             }
         }
         #endregion
+
+        #region Autenticar
+        [HttpPost("Autenticar")]
+        public async Task<IActionResult> AutenticarUsuario(UtilizadorAutenticarDTO credenciais)
+
+        {
+            try
+            {
+                Utilizador? utilizador = await _context.Utilizadores
+                   .FirstOrDefaultAsync(x => x.Username.Equals(credenciais.Username) || x.Email.Equals(credenciais.Email));
+
+                if (utilizador == null)
+                {
+                    throw new System.Exception("Usuário não encontrado.");
+                }
+                else
+                {
+                    if (!Criptografia.VerificarPasswordHash(credenciais.SenhaString, utilizador.SenhaHash!, utilizador.SenhaSalt!))
+                    {
+                        throw new System.Exception("Senha incorreta.");
+                    }
+                    else
+                    {
+                        await _context.SaveChangesAsync();
+                        return Ok(utilizador);
+                    }
+                }
+
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(ex.Message + " - " + ex.InnerException);
+            }
+
+        }
+        #endregion
+        #region  Token
+        private string CreateToken(Utilizador utilizador)
+        {
+
+            var chaveSecreta = _configuration.GetValue<string>("ConfiguracaoToken:Chave");
+
+            if (string.IsNullOrEmpty(chaveSecreta))
+            {
+                throw new InvalidCastException("Geração de Token Inválida, se autentique outra vez");
+            }
+
+            var claims = new List<Claim>{
+
+            new Claim(ClaimTypes.NameIdentifier, utilizador.IdUtilizador.ToString()),
+            new Claim(ClaimTypes.NameIdentifier, utilizador.Username)
+
+        };
+
+            // Crie a chave de segurança
+            var chave = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(chaveSecreta));
+
+            // Defina as credenciais de assinatura usando o algoritmo HmacSha256   
+            var cred = new SigningCredentials(chave, SecurityAlgorithms.HmacSha256);
+
+            //Defina a data de expiração do token
+            var expiracao = DateTime.UtcNow.AddDays(1);
+
+            // Crie o descritor do token com as claims, expiração e credenciais
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = expiracao,
+                SigningCredentials = cred,
+                IssuedAt = DateTime.UtcNow, // Registra quando o token foi emitido
+                Issuer = _configuration["ConfiguracaoToken:Issuer"],  // Se necessário, adicione o emissor
+                Audience = _configuration["ConfiguracaoToken:Audience"] // Se necessário, adicione o público
+            };
+
+            // Crie o token JWT
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+
+            // Retorne o token JWT como string
+            return tokenHandler.WriteToken(token);
+        }
+
+#endregion
     }
 }

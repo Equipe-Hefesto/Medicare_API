@@ -66,13 +66,13 @@ namespace Medicare_API.Controllers
             {
                 // Validar se o Utilizador existe
                 var utilizador = await _context.Utilizadores.FirstOrDefaultAsync(u => u.IdUtilizador == dto.IdUtilizador);
-                if (utilizador != null)
-                    return BadRequest($"O Utilizador com o ID {dto.IdUtilizador} já existe.");
+                if (utilizador == null)
+                    return BadRequest($"O Utilizador com o ID {dto.IdUtilizador} não existe.");
 
                 // Validar se o Tipo existe
                 var tipo = await _context.TiposUtilizadores.FirstOrDefaultAsync(t => t.IdTipoUtilizador == dto.IdTipoUtilizador);
-                if (tipo != null)
-                    return BadRequest($"O Tipo com o ID {dto.IdTipoUtilizador} já existe.");
+                if (tipo == null)
+                    return BadRequest($"O Tipo com o ID {dto.IdTipoUtilizador} não existe.");
 
                 // Validar se o relacionamento já existe
                 if (await _context.UtilizadoresTiposUtilizadores.AnyAsync(ut => ut.IdUtilizador == dto.IdUtilizador && ut.IdTipoUtilizador == dto.IdTipoUtilizador))

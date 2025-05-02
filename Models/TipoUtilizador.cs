@@ -9,6 +9,7 @@ namespace Medicare_API.Models
         public int IdTipoUtilizador { get; set; }
         public string Descricao { get; set; } = null!;
 
+        [JsonIgnore]
         public List<UtilizadorTipoUtilizador> Utilizadores { get; set; } = new();
     }
 

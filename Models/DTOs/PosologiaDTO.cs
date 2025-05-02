@@ -17,10 +17,11 @@ namespace Medicare_API.Models.DTOs
 
 
         public required int IdTipoAgendamento { get; set; }
+        public List<string> Horarios { get; set; } = new();
         public required DateTime DataInicio { get; set; }
         public DateTime DataFim { get; set; }
         public string? Intervalo { get; set; }
-        public string? DiasSemana { get; set; }
+        public List<string> DiasSemana { get; set; } = new();
         public int DiasUso { get; set; }
         public int DiasPausa { get; set; }
     }
@@ -35,13 +36,14 @@ namespace Medicare_API.Models.DTOs
         public required int IdTipoFarmaceutico { get; set; }
         public required int QuantidadeDose { get; set; }
         public required int IdTipoGrandeza { get; set; }
+        public List<string> Horarios { get; set; } = new();
 
 
         public required int IdTipoAgendamento { get; set; }
         public required DateTime DataInicio { get; set; }
         public DateTime DataFim { get; set; }
         public string? Intervalo { get; set; }
-        public string? DiasSemana { get; set; }
+        public List<string> DiasSemana { get; set; } = new();
         public int DiasUso { get; set; }
         public int DiasPausa { get; set; }
     }
