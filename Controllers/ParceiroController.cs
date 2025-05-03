@@ -1,11 +1,13 @@
 using Medicare_API.Data;
 using Medicare_API.Models;
 using Medicare_API.Models.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Medicare_API.Controllers
 {
+    [Authorize]
     [Route("[controller]")]
     public class ParceiroController : Controller
     {
@@ -55,7 +57,7 @@ namespace Medicare_API.Controllers
         #endregion
 
         #region POST
-        [HttpPost]
+        [HttpPost("AddPar")]
         public async Task<ActionResult> PostParceiro([FromBody] ParceiroCreateDTO dto)
         {
             try

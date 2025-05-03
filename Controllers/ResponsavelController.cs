@@ -1,11 +1,13 @@
 using Medicare_API.Data;
 using Medicare_API.Models;
 using Medicare_API.Models.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Medicare_API.Controllers
 {
+    [Authorize]
     [Route("[controller]")]
     public class ResponsavelController : Controller
     {
@@ -17,7 +19,7 @@ namespace Medicare_API.Controllers
         }
 
         #region GET
-        [HttpGet]
+        [HttpGet("GetAll")]
         public async Task<ActionResult<IEnumerable<Responsavel>>> GetAllRelacionamentos()
         {
             try
@@ -59,7 +61,7 @@ namespace Medicare_API.Controllers
         #endregion
 
         #region POST
-        [HttpPost]
+        [HttpPost("AddRel")]
         public async Task<ActionResult> PostRelacionamento([FromBody] ResponsavelCreateDTO dto)
         {
             try

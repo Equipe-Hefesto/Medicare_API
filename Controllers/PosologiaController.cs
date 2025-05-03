@@ -17,7 +17,7 @@ namespace Medicare_API.Controllers
         }
 
         #region GET
-        [HttpGet]
+        [HttpGet("GetAll")]
         public async Task<ActionResult<IEnumerable<Posologia>>> GetAllPosologias()
         {
             try
@@ -57,7 +57,7 @@ namespace Medicare_API.Controllers
         #endregion
 
         #region POST
-        [HttpPost]
+        [HttpPost("AddPoso")]
         public async Task<ActionResult> PostPosologia([FromBody] PosologiaCreateDTO dto)
         {
             try
@@ -242,7 +242,7 @@ namespace Medicare_API.Controllers
         {
             return _context.Remedios.Find(idRemedio)?.Nome ?? "Medicamento";
         }
-<<<<<<< HEAD
+
         private string GetTipoFarmaceutico(int IdTipoFarmaceutico)
         {
             return _context.TiposFarmaceutico.Find(IdTipoFarmaceutico)?.Descricao ?? "Tipo Farmaceutico";

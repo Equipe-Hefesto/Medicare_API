@@ -1,11 +1,13 @@
 using Medicare_API.Data;
 using Medicare_API.Models;
 using Medicare_API.Models.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Medicare_API.Controllers
 {
+    [Authorize]
     [Route("[controller]")]
     public class PromocaoController : Controller
     {
@@ -17,7 +19,7 @@ namespace Medicare_API.Controllers
         }
 
         #region GET
-        [HttpGet]
+        [HttpGet("GetAll")]
         public async Task<ActionResult<IEnumerable<Promocao>>> GetAllPromocoes()
         {
             try
@@ -55,7 +57,7 @@ namespace Medicare_API.Controllers
         #endregion
 
         #region POST
-        [HttpPost]
+        [HttpPost("AddPromo")]
         public async Task<ActionResult> PostPromocao([FromBody] PromocaoCreateDTO dto)
         {
             try

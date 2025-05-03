@@ -5,6 +5,7 @@ using Medicare_API.Data;
 using Medicare_API.Models;
 using Medicare_API.Models.DTOs;
 using Medicare_API.Models.Utils;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -12,6 +13,7 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace Medicare_API.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("[controller]")]
     public class UtilizadorController : ControllerBase
@@ -26,7 +28,7 @@ namespace Medicare_API.Controllers
         }
 
         #region GET
-        [HttpGet]
+        [HttpGet("GetAll")]
         public async Task<ActionResult<IEnumerable<Utilizador>>> ListarUtilizadores()
         {
             try
@@ -68,7 +70,8 @@ namespace Medicare_API.Controllers
         #endregion
 
         #region POST
-        [HttpPost]
+        [AllowAnonymous]
+        [HttpPost("SingUp")]
         public async Task<ActionResult> PostUtilizador([FromBody] UtilizadorCreateDTO dto)
         {
             try
@@ -167,7 +170,8 @@ namespace Medicare_API.Controllers
         #endregion
 
         #region Autenticar
-        [HttpPost("Autenticar")]
+        [AllowAnonymous]
+        [HttpPost("Login")]
         public async Task<IActionResult> AutenticarUsuario(UtilizadorAutenticarDTO credenciais)
 
         {
@@ -188,7 +192,12 @@ namespace Medicare_API.Controllers
                     }
                     else
                     {
-                        await _context.SaveChangesAsync();
+
+                        utilizador.SenhaHash = null;
+                        utilizador.SenhaSalt = null;
+                        utilizador.Token = CreateToken(utilizador);
+                        
+                        
                         return Ok(utilizador);
                     }
                 }

@@ -17,7 +17,7 @@ namespace Medicare_API.Controllers
         }
 
         #region GET
-        [HttpGet]
+        [HttpGet("GetAll")]
         public async Task<ActionResult<IEnumerable<TipoAgendamento>>> GetAllTipos()
         {
             try
@@ -55,7 +55,7 @@ namespace Medicare_API.Controllers
         #endregion
 
         #region POST
-        [HttpPost]
+        [HttpPost("AddTipo")]
         public async Task<ActionResult> PostTipo([FromBody] TipoCreateDTO dto)
         {
             try
