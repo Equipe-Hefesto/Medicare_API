@@ -1,10 +1,12 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Threading.Tasks;
 using Medicare_API.Data;
 using Medicare_API.Models;
 using Medicare_API.Models.DTOs;
 using Medicare_API.Models.Utils;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -12,6 +14,7 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace Medicare_API.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("[controller]")]
     public class UtilizadorController : ControllerBase
@@ -26,7 +29,7 @@ namespace Medicare_API.Controllers
         }
 
         #region GET
-        [HttpGet]
+        [HttpGet("GetAll")]
         public async Task<ActionResult<IEnumerable<Utilizador>>> ListarUtilizadores()
         {
             try
@@ -68,7 +71,8 @@ namespace Medicare_API.Controllers
         #endregion
 
         #region POST
-        [HttpPost]
+        [AllowAnonymous]
+        [HttpPost("SingUp")]
         public async Task<ActionResult> PostUtilizador([FromBody] UtilizadorCreateDTO dto)
         {
             try
@@ -145,6 +149,7 @@ namespace Medicare_API.Controllers
         #endregion
 
         #region DELETE
+        
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteUtilizador(int id)
         {
@@ -167,7 +172,8 @@ namespace Medicare_API.Controllers
         #endregion
 
         #region Autenticar
-        [HttpPost("Autenticar")]
+        [AllowAnonymous]
+        [HttpPost("Login")]
         public async Task<IActionResult> AutenticarUsuario(UtilizadorAutenticarDTO credenciais)
 
         {
@@ -184,11 +190,21 @@ namespace Medicare_API.Controllers
                 {
                     if (!Criptografia.VerificarPasswordHash(credenciais.SenhaString, utilizador.SenhaHash!, utilizador.SenhaSalt!))
                     {
-                        throw new System.Exception("Senha incorreta.");
+                        throw new UnauthorizedAccessException("Senha incorreta.");
                     }
                     else
                     {
-                        await _context.SaveChangesAsync();
+                         
+                        var utilizador1 = _context.Utilizadores
+                       .Include(u => u.TiposUtilizadores)
+                       .ThenInclude(ut => ut.TipoUtilizador)
+                       .FirstOrDefault(u => u.Username == credenciais.Username);
+
+                        utilizador.SenhaHash = null;
+                        utilizador.SenhaSalt = null;
+                        utilizador.Token = CreateToken(utilizador);
+
+
                         return Ok(utilizador);
                     }
                 }
@@ -206,7 +222,7 @@ namespace Medicare_API.Controllers
         {
 
             var chaveSecreta = _configuration.GetValue<string>("ConfiguracaoToken:Chave");
-
+            TipoUtilizador tipoUtilizador = new TipoUtilizador();
             if (string.IsNullOrEmpty(chaveSecreta))
             {
                 throw new InvalidCastException("Geração de Token Inválida, se autentique outra vez");
@@ -215,9 +231,20 @@ namespace Medicare_API.Controllers
             var claims = new List<Claim>{
 
             new Claim(ClaimTypes.NameIdentifier, utilizador.IdUtilizador.ToString()),
-            new Claim(ClaimTypes.NameIdentifier, utilizador.Username)
+            new Claim(ClaimTypes.Name, utilizador.Username),
+
 
         };
+            foreach (var tipo in utilizador.TiposUtilizadores.Select(ut => ut.TipoUtilizador.Descricao))
+            {
+                claims.Add(new Claim(ClaimTypes.Role, tipo));
+            }
+
+
+
+
+
+
 
             // Crie a chave de segurança
             var chave = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(chaveSecreta));
@@ -247,6 +274,6 @@ namespace Medicare_API.Controllers
             return tokenHandler.WriteToken(token);
         }
 
-#endregion
+        #endregion
     }
 }
