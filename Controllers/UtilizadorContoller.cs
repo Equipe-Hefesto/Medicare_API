@@ -235,7 +235,7 @@ namespace Medicare_API.Controllers
 
 
         };
-            foreach (var tipo in utilizador.TiposUtilizadores.Select(ut => ut.TipoUtilizador.Descricao))
+            foreach (var tipo in utilizador.TiposUtilizadores.Select(ut => ut.TipoUtilizador!.Descricao))
             {
                 claims.Add(new Claim(ClaimTypes.Role, tipo));
             }

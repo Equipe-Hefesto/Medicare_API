@@ -9,12 +9,12 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-        // Registra o DataContext com o contêiner de serviços
-        builder.Services.AddDbContext<DataContext>(options =>
-            options.UseSqlServer(builder.Configuration.GetConnectionString("SomeeConnection")));
+// Registra o DataContext com o contêiner de serviços
+builder.Services.AddDbContext<DataContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("SomeeConnection")));
 
-        // Outros serviços e configurações
-        builder.Services.AddControllers();
+// Outros serviços e configurações
+builder.Services.AddControllers();
 
 // Adiciona os serviços necessários para controllers
 builder.Services.AddControllers();
@@ -23,25 +23,25 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)  
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
     {
-        // Habilita a validação da chave de assinatura do token
-        ValidateIssuerSigningKey = true,
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            // Habilita a validação da chave de assinatura do token
+            ValidateIssuerSigningKey = true,
 
-        // Define a chave de segurança usada para validar o token
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII
-            .GetBytes(builder.Configuration.GetSection("ConfiguracaoToken:Chave").Value)),
+            // Define a chave de segurança usada para validar o token
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII
+            .GetBytes(builder.Configuration.GetSection("ConfiguracaoToken:Chave").Value!)),
 
-        // Desabilita a validação do emissor (Issuer), útil quando o backend não especifica um emissor fixo
-        ValidateIssuer = false,
+            // Desabilita a validação do emissor (Issuer), útil quando o backend não especifica um emissor fixo
+            ValidateIssuer = false,
 
-        // Desabilita a validação do público (Audience), permitindo que qualquer cliente utilize o token
-        ValidateAudience = false
-    };
-});
+            // Desabilita a validação do público (Audience), permitindo que qualquer cliente utilize o token
+            ValidateAudience = false
+        };
+    });
 
 
 var app = builder.Build();
