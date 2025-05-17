@@ -1,11 +1,13 @@
 using Medicare_API.Data;
 using Medicare_API.Models;
 using Medicare_API.Models.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Medicare_API.Controllers
 {
+    [Authorize]
     [Route("[controller]")]
     public class CuidadorController : Controller
     {
@@ -18,6 +20,8 @@ namespace Medicare_API.Controllers
 
         #region GET
         [HttpGet]
+        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles = "AMIGO_MEDICARE")]
         public async Task<ActionResult<IEnumerable<Cuidador>>> GetAllRelacionamentos()
         {
             try
@@ -39,6 +43,8 @@ namespace Medicare_API.Controllers
 
         #region GET {id}
         [HttpGet("{idCuidador}/{idPaciente}")]
+        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles = "AMIGO_MEDICARE")]
         public async Task<ActionResult<Cuidador>> GetRelacionamentoPorIds(int idCuidador, int idPaciente)
         {
             try
@@ -60,6 +66,9 @@ namespace Medicare_API.Controllers
 
         #region POST
         [HttpPost]
+        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles = "AMIGO_MEDICARE")]
+        [Authorize(Roles = "CUIDADOR")]
         public async Task<ActionResult> PostRelacionamento([FromBody] CuidadorDTO dto)
         {
             try
@@ -103,6 +112,7 @@ namespace Medicare_API.Controllers
 
         #region PUT
         [HttpPut("{idCuidador}/{idPaciente}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> PutRelacionamento(int idCuidador, int idPaciente, [FromBody] CuidadorUpdateDTO dto)
         {
             try
@@ -115,10 +125,10 @@ namespace Medicare_API.Controllers
                 if (erroPaciente != null) return erroPaciente;  // Se houver erro, retorna o erro imediatamente
 
                 // Validar se o relacionamento já existe
-                (ActionResult? erroRelacao, Cuidador? relacionamento ) = await VerificarRelacionamento(dto.IdCuidador, dto.IdPaciente, "existe");
+                (ActionResult? erroRelacao, Cuidador? relacionamento) = await VerificarRelacionamento(dto.IdCuidador, dto.IdPaciente, "existe");
                 if (erroRelacao != null) return erroRelacao;  // Se houver erro, retorna o erro imediatamente
 
-                var c = relacionamento !;
+                var c = relacionamento!;
 
                 c.IdCuidador = dto.IdCuidador;
                 c.IdPaciente = dto.IdPaciente;
@@ -143,12 +153,13 @@ namespace Medicare_API.Controllers
 
         #region DELETE
         [HttpDelete("{idCuidador}/{idPaciente}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> DeleteCuidador(int idCuidador, int idPaciente)
         {
             try
             {
                 // Validar se o relacionamento já existe
-                (ActionResult? erroRelacao, Cuidador? relacionamento ) = await VerificarRelacionamento(idCuidador, idPaciente, "existe");
+                (ActionResult? erroRelacao, Cuidador? relacionamento) = await VerificarRelacionamento(idCuidador, idPaciente, "existe");
                 if (erroRelacao != null) return erroRelacao;  // Se houver erro, retorna o erro imediatamente
 
                 _context.Cuidadores.Remove(relacionamento!);

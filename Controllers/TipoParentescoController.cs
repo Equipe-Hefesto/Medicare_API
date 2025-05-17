@@ -1,14 +1,17 @@
 using Medicare_API.Data;
 using Medicare_API.Models;
 using Medicare_API.Models.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Medicare_API.Controllers
 {
+    [Authorize]
     [Route("[controller]")]
     public class TipoParentescoController : Controller
     {
+        
         private readonly DataContext _context;
 
         public TipoParentescoController(DataContext context)
@@ -18,6 +21,7 @@ namespace Medicare_API.Controllers
 
         #region GET
         [HttpGet]
+        [Authorize(Roles ="ADMIN")]
         public async Task<ActionResult<IEnumerable<TipoParentesco>>> GetAllTipos()
         {
             try

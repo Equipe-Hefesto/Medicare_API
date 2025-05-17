@@ -1,11 +1,13 @@
 using Medicare_API.Data;
 using Medicare_API.Models;
 using Medicare_API.Models.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Medicare_API.Controllers
 {
+    [Authorize]
     [Route("[controller]")]
     public class HorarioController : Controller
     {
@@ -18,6 +20,7 @@ namespace Medicare_API.Controllers
 
         #region GET
         [HttpGet]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<IEnumerable<Horario>>> GetAllHorarios()
         {
             try
@@ -37,6 +40,7 @@ namespace Medicare_API.Controllers
 
         #region GET {id}
         [HttpGet("{id}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<Horario>> GetHorarioPorId(int id)
         {
             try
@@ -56,6 +60,7 @@ namespace Medicare_API.Controllers
 
         #region POST
         [HttpPost]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> PostHorario([FromBody] HorarioCreateDTO dto)
         {
             try
@@ -86,6 +91,7 @@ namespace Medicare_API.Controllers
 
         #region PUT
         [HttpPut("{id}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> PutHorario(int id, [FromBody] HorarioUpdateDTO dto)
         {
             try
@@ -116,6 +122,7 @@ namespace Medicare_API.Controllers
 
         #region DELETE
         [HttpDelete("{id}/{hora}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> DeleteHorario(int id, TimeOnly hora)
         {
             try

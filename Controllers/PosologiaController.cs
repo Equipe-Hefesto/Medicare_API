@@ -1,11 +1,13 @@
 using Medicare_API.Data;
 using Medicare_API.Models;
 using Medicare_API.Models.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Medicare_API.Controllers
 {
+    [Authorize]
     [Route("[controller]")]
     public class PosologiaController : Controller
     {
@@ -18,6 +20,10 @@ namespace Medicare_API.Controllers
 
         #region GET
         [HttpGet]
+        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles = "AMIGO_MEDICARE")]
+        [Authorize(Roles = "CUIDADOR")]
+        [Authorize(Roles = "RESPONSÁVEL")]
         public async Task<ActionResult<IEnumerable<Posologia>>> GetAllPosologias()
         {
             try
@@ -38,6 +44,10 @@ namespace Medicare_API.Controllers
 
         #region GET {id}
         [HttpGet("{id}")]
+        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles = "AMIGO_MEDICARE")]
+        [Authorize(Roles = "CUIDADOR")]
+        [Authorize(Roles = "RESPONSÁVEL")]
         public async Task<ActionResult<Posologia>> GetPosologiaPorId(int id)
         {
             try
@@ -58,6 +68,8 @@ namespace Medicare_API.Controllers
 
         #region POST
         [HttpPost]
+        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles = "AMIGO_MEDICARE")]
         public async Task<ActionResult> PostPosologia([FromBody] PosologiaCreateDTO dto)
         {
             try
@@ -137,6 +149,8 @@ namespace Medicare_API.Controllers
 
         #region PUT
         [HttpPut("{id}")]
+        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles = "AMIGO_MEDICARE")]
         public async Task<ActionResult> PutPosologia(int id, [FromBody] PosologiaUpdateDTO dto)
         {
             try
@@ -216,6 +230,8 @@ namespace Medicare_API.Controllers
 
         #region DELETE
         [HttpDelete("{id}")]
+        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles = "AMIGO_MEDICARE")]
         public async Task<ActionResult> DeletePosologia(int id)
         {
             try

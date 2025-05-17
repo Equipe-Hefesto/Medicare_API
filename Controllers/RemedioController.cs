@@ -1,11 +1,13 @@
 using Medicare_API.Data;
 using Medicare_API.Models;
 using Medicare_API.Models.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Medicare_API.Controllers
 {
+    [Authorize]
     [Route("[controller]")]
     public class RemedioController : Controller
     {
@@ -18,6 +20,10 @@ namespace Medicare_API.Controllers
 
         #region GET
         [HttpGet]
+        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles = "AMIGO_MEDICARE")]
+        [Authorize(Roles = "RESPONSAVEL")]
+        [Authorize(Roles = "CUIDADOR")]
         public async Task<ActionResult<IEnumerable<Remedio>>> GetAllRemedios()
         {
             try
@@ -37,6 +43,10 @@ namespace Medicare_API.Controllers
 
         #region GET {id}
         [HttpGet("{id}")]
+        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles = "AMIGO_MEDICARE")]
+        [Authorize(Roles = "RESPONSAVEL")]
+        [Authorize(Roles = "CUIDADOR")]
         public async Task<ActionResult<Remedio>> GetRemedioPorId(int id)
         {
             try
@@ -56,6 +66,8 @@ namespace Medicare_API.Controllers
 
         #region POST
         [HttpPost]
+        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles = "AMIGO_MEDICARE")]
         public async Task<ActionResult> PostRemedio([FromBody] RemedioCreateDTO dto)
         {
             try
@@ -87,6 +99,9 @@ namespace Medicare_API.Controllers
 
         #region PUT
         [HttpPut("{id}")]
+        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles = "AMIGO_MEDICARE")]
+
         public async Task<ActionResult> PutTipo(int id, [FromBody] RemedioUpdateDTO dto)
         {
             try
@@ -95,8 +110,8 @@ namespace Medicare_API.Controllers
                     return NotFound($"O Remedio com o ID {id} não foi encontrado.");
 
                 // Atualize os campos
-                 var r = new Remedio();
-                r.IdRemedio = dto.IdRemedio;
+                var r = new Remedio();
+                //r.IdRemedio = dto.IdRemedio;
                 r.Nome = dto.Nome;
                 r.DataAtualizacao = DateTime.Now;
 
@@ -114,6 +129,8 @@ namespace Medicare_API.Controllers
 
         #region DELETE
         [HttpDelete("{id}")]
+        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles = "AMIGO_MEDICARE")]
         public async Task<ActionResult> DeleteTipo(int id)
         {
             try

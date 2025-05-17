@@ -29,6 +29,7 @@ namespace Medicare_API.Controllers
         }
 
         #region GET
+        [Authorize(Roles ="ADMIN")]
         [HttpGet("GetAll")]
         public async Task<ActionResult<IEnumerable<Utilizador>>> ListarUtilizadores()
         {
@@ -50,6 +51,7 @@ namespace Medicare_API.Controllers
         #endregion
 
         #region GET {id}
+        [Authorize(Roles ="ADMIN")]
         [HttpGet("{id}")]
         public async Task<ActionResult<Utilizador>> GetUtilizador(int id)
         {
@@ -149,8 +151,9 @@ namespace Medicare_API.Controllers
         #endregion
 
         #region DELETE
-        
+
         [HttpDelete("{id}")]
+        [Authorize(Roles ="ADMIN")]
         public async Task<ActionResult> DeleteUtilizador(int id)
         {
             try

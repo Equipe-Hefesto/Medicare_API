@@ -1,11 +1,13 @@
 using Medicare_API.Data;
 using Medicare_API.Models;
 using Medicare_API.Models.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Medicare_API.Controllers
 {
+    [Authorize]
     [Route("[controller]")]
     public class TipoUtilizadorController : Controller
     {
@@ -17,6 +19,7 @@ namespace Medicare_API.Controllers
         }
 
         #region GET
+        [Authorize(Roles ="ADMIN")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<TipoUtilizador>>> GetAllTipos()
         {
@@ -36,6 +39,7 @@ namespace Medicare_API.Controllers
         #endregion
 
         #region GET {id}
+        [Authorize(Roles ="ADMIN")]
         [HttpGet("{id}")]
         public async Task<ActionResult<TipoUtilizador>> GetTipoPorId(int id)
         {
@@ -55,6 +59,7 @@ namespace Medicare_API.Controllers
         #endregion
 
         #region POST
+        [Authorize(Roles ="ADMIN")]
         [HttpPost]
         public async Task<ActionResult> PostTipo([FromBody] TipoCreateDTO dto)
         {
@@ -84,6 +89,7 @@ namespace Medicare_API.Controllers
         #endregion
 
         #region PUT
+        [Authorize(Roles ="ADMIN")]
         [HttpPut("{id}")]
         public async Task<ActionResult> PutTipo(int id, [FromBody] TipoUpdateDTO dto)
         {
@@ -111,6 +117,7 @@ namespace Medicare_API.Controllers
         #endregion
 
         #region DELETE
+        [Authorize(Roles ="ADMIN")]
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteTipo(int id)
         {

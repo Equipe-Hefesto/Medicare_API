@@ -1,11 +1,13 @@
 using Medicare_API.Data;
 using Medicare_API.Models;
 using Medicare_API.Models.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Medicare_API.Controllers
 {
+    [Authorize]
     [Route("[controller]")]
     public class PromocaoController : Controller
     {
@@ -18,6 +20,9 @@ namespace Medicare_API.Controllers
 
         #region GET
         [HttpGet]
+        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles = "PARCEIRO")]
+        [Authorize(Roles = "AMIGO_MEDICARE")]
         public async Task<ActionResult<IEnumerable<Promocao>>> GetAllPromocoes()
         {
             try
@@ -37,6 +42,8 @@ namespace Medicare_API.Controllers
 
         #region GET {id}
         [HttpGet("{id}")]
+        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles = "PARCEIRO")]
         public async Task<ActionResult<Promocao>> GetPromocaoPorId(int id)
         {
             try
@@ -56,6 +63,8 @@ namespace Medicare_API.Controllers
 
         #region POST
         [HttpPost]
+        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles = "PARCEIRO")]
         public async Task<ActionResult> PostPromocao([FromBody] PromocaoCreateDTO dto)
         {
             try
@@ -66,7 +75,7 @@ namespace Medicare_API.Controllers
                 }
 
                 var remedio = await _context.Remedios.FirstOrDefaultAsync(r => r.IdRemedio == dto.IdRemedio);
-                var formaPagamento = await _context.FormasPagamento.FirstOrDefaultAsync(fp => fp.IdFormaPagamento == dto.IdFormaPagamento);;
+                var formaPagamento = await _context.FormasPagamento.FirstOrDefaultAsync(fp => fp.IdFormaPagamento == dto.IdFormaPagamento); ;
                 var utilizador = await _context.Utilizadores.FirstOrDefaultAsync(u => u.IdUtilizador == dto.IdUtilizador);
 
                 var ultimoId = await _context.Promocoes.OrderByDescending(x => x.IdPromocao).Select(x => x.IdPromocao).FirstOrDefaultAsync();
@@ -93,11 +102,14 @@ namespace Medicare_API.Controllers
             {
                 return StatusCode(500, $"Erro ao criar item: {ex.Message}");
             }
+            
         }
         #endregion
 
         #region PUT
         [HttpPut("{id}")]
+        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles = "PARCEIRO")]
         public async Task<ActionResult> PutPromocao(int id, [FromBody] PromocaoUpdateDTO dto)
         {
             try
@@ -107,7 +119,7 @@ namespace Medicare_API.Controllers
 
                 // Atualize os campos
                 var remedio = await _context.Remedios.FirstOrDefaultAsync(r => r.IdRemedio == dto.IdRemedio);
-                var formaPagamento = await _context.FormasPagamento.FirstOrDefaultAsync(fp => fp.IdFormaPagamento == dto.IdFormaPagamento);;
+                var formaPagamento = await _context.FormasPagamento.FirstOrDefaultAsync(fp => fp.IdFormaPagamento == dto.IdFormaPagamento); ;
                 var utilizador = await _context.Utilizadores.FirstOrDefaultAsync(u => u.IdUtilizador == dto.IdUtilizador);
 
                 var p = new Promocao();
@@ -138,6 +150,8 @@ namespace Medicare_API.Controllers
 
         #region DELETE
         [HttpDelete("{id}")]
+        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles = "PARCEIRO")]
         public async Task<ActionResult> DeletePromocao(int id)
         {
             try

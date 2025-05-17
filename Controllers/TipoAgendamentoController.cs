@@ -1,11 +1,13 @@
 using Medicare_API.Data;
 using Medicare_API.Models;
 using Medicare_API.Models.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Medicare_API.Controllers
 {
+    [Authorize]
     [Route("[controller]")]
     public class TipoAgendamentoController : Controller
     {
@@ -18,6 +20,8 @@ namespace Medicare_API.Controllers
 
         #region GET
         [HttpGet]
+        [Authorize(Roles = "ADMIN")]
+        
         public async Task<ActionResult<IEnumerable<TipoAgendamento>>> GetAllTipos()
         {
             try
@@ -37,6 +41,7 @@ namespace Medicare_API.Controllers
 
         #region GET {id}
         [HttpGet("{id}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<TipoAgendamento>> GetTipoPorId(int id)
         {
             try
@@ -56,6 +61,7 @@ namespace Medicare_API.Controllers
 
         #region POST
         [HttpPost]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> PostTipo([FromBody] TipoCreateDTO dto)
         {
             try
@@ -85,6 +91,7 @@ namespace Medicare_API.Controllers
 
         #region PUT
         [HttpPut("{id}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> PutTipo(int id, [FromBody] TipoUpdateDTO dto)
         {
             try
@@ -93,7 +100,7 @@ namespace Medicare_API.Controllers
                     return NotFound($"O Tipo com o ID {id} não foi encontrado.");
 
                 // Atualize os campos
-                 var t = new TipoAgendamento();
+                var t = new TipoAgendamento();
                 t.IdTipoAgendamento = dto.IdTipo;
                 t.Descricao = dto.Descricao;
 
@@ -112,6 +119,7 @@ namespace Medicare_API.Controllers
 
         #region DELETE
         [HttpDelete("{id}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> DeleteTipo(int id)
         {
             try

@@ -1,11 +1,13 @@
 using Medicare_API.Data;
 using Medicare_API.Models;
 using Medicare_API.Models.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Medicare_API.Controllers
 {
+    [Authorize]
     [Route("[controller]")]
     public class ParceiroController : Controller
     {
@@ -18,6 +20,7 @@ namespace Medicare_API.Controllers
 
         #region GET
         [HttpGet]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<IEnumerable<Parceiro>>> GetAllParceiros()
         {
             try
@@ -37,6 +40,8 @@ namespace Medicare_API.Controllers
 
         #region GET {id}
         [HttpGet("{id}")]
+        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles = "PARCEIRO")]
         public async Task<ActionResult<Parceiro>> GetParceiro(int id)
         {
             try
@@ -56,6 +61,8 @@ namespace Medicare_API.Controllers
 
         #region POST
         [HttpPost]
+        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles = "PARCEIRO")]
         public async Task<ActionResult> PostParceiro([FromBody] ParceiroCreateDTO dto)
         {
             try
@@ -91,6 +98,8 @@ namespace Medicare_API.Controllers
 
         #region PUT
         [HttpPut("{id}")]
+        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles = "PARCEIRO")]
         public async Task<ActionResult> PutParceiro(int id, [FromBody] ParceiroUpdateDTO dto)
         {
             try
@@ -120,6 +129,7 @@ namespace Medicare_API.Controllers
 
         #region DELETE
         [HttpDelete("{id}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> DeleteParceiro(int id)
         {
             try

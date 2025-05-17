@@ -1,11 +1,13 @@
 using Medicare_API.Data;
 using Medicare_API.Models;
 using Medicare_API.Models.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Medicare_API.Controllers
 {
+    [Authorize]
     [Route("[controller]")]
     public class ParceiroUtilizadorController : Controller
     {
@@ -18,6 +20,7 @@ namespace Medicare_API.Controllers
 
         #region GET
         [HttpGet]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<IEnumerable<Parceiro>>> GetAllRelacionamentos()
         {
             try
@@ -39,6 +42,8 @@ namespace Medicare_API.Controllers
 
         #region GET {id}
         [HttpGet("{idParceiro}/{idUtilizador}")]
+        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles = "PARCEIRO")]
         public async Task<ActionResult<Parceiro>> GetRelacionamentoPorIds(int idParceiro, int idUtilizador)
         {
             try
@@ -60,6 +65,8 @@ namespace Medicare_API.Controllers
 
         #region POST
         [HttpPost]
+        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles = "PARCEIRO")]
         public async Task<ActionResult> PostRelacionamento([FromBody] ParceiroUtilizadorCreateDTO dto)
         {
             try
@@ -100,6 +107,7 @@ namespace Medicare_API.Controllers
 
         #region PUT
         [HttpPut("{idParceiro}/{idUtilizador}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> PutRelacionamento(int idParceiro, int idUtilizador, [FromBody] ParceiroUtilizadorUpdateDTO dto)
         {
             try
@@ -120,7 +128,7 @@ namespace Medicare_API.Controllers
                 {
                     return BadRequest($"A relação IdParceiro {dto.IdParceiro} + IdUtilizador {dto.IdUtilizador} não existe.");
                 }
-            
+
                 pc.IdParceiro = dto.IdParceiro;
                 pc.IdUtilizador = dto.IdUtilizador;
                 pc.Parceiro = parceiro;
@@ -140,11 +148,12 @@ namespace Medicare_API.Controllers
 
         #region DELETE
         [HttpDelete("{idParceiro}/{idUtilizador}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> DeleteParceiro(int idParceiro, int idUtilizador)
         {
             try
             {
-                 var relacionamento = await _context.ParceirosUtilizadores.FirstOrDefaultAsync(pu => pu.IdParceiro == idParceiro && pu.IdUtilizador == idUtilizador);
+                var relacionamento = await _context.ParceirosUtilizadores.FirstOrDefaultAsync(pu => pu.IdParceiro == idParceiro && pu.IdUtilizador == idUtilizador);
                 if (relacionamento == null)
                 {
                     return BadRequest($"A relação IdParceiro {idParceiro} + IdUtilizador {idUtilizador} não existe.");

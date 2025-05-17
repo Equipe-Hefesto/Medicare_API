@@ -1,11 +1,13 @@
 using Medicare_API.Data;
 using Medicare_API.Models;
 using Medicare_API.Models.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Medicare_API.Controllers
 {
+    [Authorize]
     [Route("[controller]")]
     public class FormaPagamentoController : Controller
     {
@@ -18,6 +20,7 @@ namespace Medicare_API.Controllers
 
         #region GET
         [HttpGet]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<IEnumerable<FormaPagamento>>> GetAllFormasPagamento()
         {
             try
@@ -37,6 +40,7 @@ namespace Medicare_API.Controllers
 
         #region GET {id}
         [HttpGet("{id}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<FormaPagamento>> GetFormaPagamentoPorId(int id)
         {
             try
@@ -56,6 +60,7 @@ namespace Medicare_API.Controllers
 
         #region POST
         [HttpPost]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> PostFormaPagamento([FromBody] FormaPagamentoCreateDTO dto)
         {
             try
@@ -88,6 +93,7 @@ namespace Medicare_API.Controllers
 
         #region PUT
         [HttpPut("{id}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> PutFormaPagamento(int id, [FromBody] FormaPagamentoUpdateDTO dto)
         {
             try
@@ -118,6 +124,7 @@ namespace Medicare_API.Controllers
 
         #region DELETE
         [HttpDelete("{id}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> DeleteFormaPagamento(int id)
         {
             try

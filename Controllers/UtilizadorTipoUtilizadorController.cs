@@ -1,11 +1,13 @@
 using Medicare_API.Data;
 using Medicare_API.Models;
 using Medicare_API.Models.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Medicare_API.Controllers
 {
+    [Authorize]
     [Route("[controller]")]
     public class UtilizadorTipoUtilizadorController : Controller
     {
@@ -18,6 +20,7 @@ namespace Medicare_API.Controllers
 
         #region GET
         [HttpGet]
+        [Authorize(Roles ="ADMIN")]
         public async Task<ActionResult<IEnumerable<UtilizadorTipoUtilizador>>> GetAllRelacionamentos()
         {
             try
@@ -39,6 +42,7 @@ namespace Medicare_API.Controllers
 
         #region GET {id}
         [HttpGet("{idUtilizador}/{idTipo}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<UtilizadorTipoUtilizador>> GetRelacionamentoPorIds(int idUtilizador, int idTipo)
         {
             try
@@ -55,6 +59,7 @@ namespace Medicare_API.Controllers
             {
                 return StatusCode(500, $"Erro interno: {ex.Message}");
             }
+            
         }
         #endregion
 
@@ -105,6 +110,7 @@ namespace Medicare_API.Controllers
 
         #region PUT
         [HttpPut("{idUtilizador}/{idTipo}")]
+        [Authorize(Roles ="ADMIN")]
         public async Task<ActionResult> PutRelacionamento(int idUtilizador, int idTipo, [FromBody] UtilizadorTipoUtilizadorUpdateDTO dto)
         {
             try
@@ -147,6 +153,7 @@ namespace Medicare_API.Controllers
 
         #region DELETE
         [HttpDelete("{idUtilizador}/{idTipo}")]
+        [Authorize(Roles ="ADMIN")]
         public async Task<ActionResult> DeleteCuidador(int idUtilizador, int idTipo)
         {
             try

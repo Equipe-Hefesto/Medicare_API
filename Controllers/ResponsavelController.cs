@@ -1,11 +1,13 @@
 using Medicare_API.Data;
 using Medicare_API.Models;
 using Medicare_API.Models.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Medicare_API.Controllers
 {
+    [Authorize]
     [Route("[controller]")]
     public class ResponsavelController : Controller
     {
@@ -18,6 +20,8 @@ namespace Medicare_API.Controllers
 
         #region GET
         [HttpGet]
+        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles = "AMIGO_MEDICARE")]
         public async Task<ActionResult<IEnumerable<Responsavel>>> GetAllRelacionamentos()
         {
             try
@@ -39,6 +43,7 @@ namespace Medicare_API.Controllers
 
         #region GET {id}
         [HttpGet("{idResponsavel}/{idPaciente}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<Responsavel>> GetRelacionamentoPorIds(int idResponsavel, int idPaciente)
         {
             try
@@ -60,6 +65,10 @@ namespace Medicare_API.Controllers
 
         #region POST
         [HttpPost]
+        [Authorize(Roles = "RESPONSAVEL")]
+        [Authorize(Roles = "AMIGO_MEDICARE")]
+        [Authorize(Roles = "ADMIN")]
+
         public async Task<ActionResult> PostRelacionamento([FromBody] ResponsavelCreateDTO dto)
         {
             try
@@ -98,6 +107,11 @@ namespace Medicare_API.Controllers
 
         #region PUT
         [HttpPut("{idResponsavel}/{idPaciente}")]
+        [Authorize(Roles = "RESPONSAVEL")]
+        [Authorize(Roles = "AMIGO_MEDICARE")]
+        [Authorize(Roles = "ADMIN")]
+
+
         public async Task<ActionResult> PutRelacionamento(int idResponsavel, int idPaciente, [FromBody] ResponsavelUpdateDTO dto)
         {
             try
@@ -134,6 +148,9 @@ namespace Medicare_API.Controllers
 
         #region DELETE
         [HttpDelete("{idResponsavel}/{idPaciente}")]
+
+        [Authorize(Roles = "ADMIN")]
+
         public async Task<ActionResult> DeleteRelacionamento(int idResponsavel, int idPaciente)
         {
             try
