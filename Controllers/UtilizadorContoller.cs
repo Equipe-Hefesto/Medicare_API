@@ -29,12 +29,21 @@ namespace Medicare_API.Controllers
         }
 
         #region GET
-        [Authorize(Roles ="ADMIN")]
+
         [HttpGet("GetAll")]
         public async Task<ActionResult<IEnumerable<Utilizador>>> ListarUtilizadores()
         {
             try
             {
+                var userId = User.GetUserId();
+                var isAdmin = User.IsAdmin();
+
+                // Se não for admin e estiver tentando editar outro usuário, bloqueia
+                if (!isAdmin)
+                {
+                    return Forbid("Você não tem autorização para Utilizar esse método");
+                }
+
                 var utilizadores = await _context.Utilizadores.ToListAsync();
                 if (utilizadores == null || utilizadores.Count == 0)
                 {
@@ -51,10 +60,23 @@ namespace Medicare_API.Controllers
         #endregion
 
         #region GET {id}
-        [Authorize(Roles ="ADMIN")]
+
         [HttpGet("{id}")]
+
         public async Task<ActionResult<Utilizador>> GetUtilizador(int id)
         {
+
+            var userId = User.GetUserId();
+            var isAdmin = User.IsAdmin();
+
+            // Se não for admin e estiver tentando editar outro usuário, bloqueia
+            if (!isAdmin && userId != id)
+                return Forbid("Você não tem permissão para editar esse utilizador.");
+
+            var utilizadores = await _context.Utilizadores.FindAsync(id);
+            if (utilizadores == null)
+                return NotFound($"O Utilizador com o ID {id} não foi encontrado.");
+
             try
             {
                 var utilizador = await _context.Utilizadores.FindAsync(id);
@@ -121,6 +143,18 @@ namespace Medicare_API.Controllers
         {
             try
             {
+                var userId = User.GetUserId();
+                var isAdmin = User.IsAdmin();
+
+                // Se não for admin e estiver tentando editar outro usuário, bloqueia
+                if (!isAdmin && userId != id)
+                    return Forbid("Você não tem permissão para editar esse utilizador.");
+
+                var utilizador = await _context.Utilizadores.FindAsync(id);
+                if (utilizador == null)
+                    return NotFound($"O Utilizador com o ID {id} não foi encontrado.");
+
+
                 if (!await _context.Utilizadores.AnyAsync(x => x.IdUtilizador == id))
                     return NotFound($"O Utilizador com o ID {id} não foi encontrado.");
 
@@ -153,7 +187,7 @@ namespace Medicare_API.Controllers
         #region DELETE
 
         [HttpDelete("{id}")]
-        [Authorize(Roles ="ADMIN")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> DeleteUtilizador(int id)
         {
             try
@@ -197,7 +231,7 @@ namespace Medicare_API.Controllers
                     }
                     else
                     {
-                         
+
                         var utilizador1 = _context.Utilizadores
                        .Include(u => u.TiposUtilizadores)
                        .ThenInclude(ut => ut.TipoUtilizador)

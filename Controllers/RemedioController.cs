@@ -1,6 +1,7 @@
 using Medicare_API.Data;
 using Medicare_API.Models;
 using Medicare_API.Models.DTOs;
+using Medicare_API.Models.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -20,14 +21,26 @@ namespace Medicare_API.Controllers
 
         #region GET
         [HttpGet]
-        [Authorize(Roles = "ADMIN")]
-        [Authorize(Roles = "AMIGO_MEDICARE")]
-        [Authorize(Roles = "RESPONSAVEL")]
-        [Authorize(Roles = "CUIDADOR")]
+       
         public async Task<ActionResult<IEnumerable<Remedio>>> GetAllRemedios()
         {
             try
             {
+                var userId = User.GetUserId();
+                var isAdmin = User.IsAdmin();
+                Utilizador utilizador = new Utilizador();
+                
+                var utilizador1 = _context.Posologias
+                       .Include(u => u.Utilizador)
+                       .ThenInclude(ut => ut.IdUtilizador)
+                       .FirstOrDefault(u => u.IdUtilizador == utilizador.IdUtilizador);
+
+                // Se não for admin e estiver tentando editar outro usuário, bloqueia
+                if (!isAdmin && userId != utilizador.IdUtilizador)
+                {
+                    return Forbid("Você não tem autorização para Utilizar esse método");
+                }
+
                 var remedios = await _context.Remedios.ToListAsync();
                 if (remedios == null || remedios.Count == 0)
                     return NotFound();
