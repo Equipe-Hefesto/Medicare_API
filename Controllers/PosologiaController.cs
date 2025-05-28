@@ -20,10 +20,7 @@ namespace Medicare_API.Controllers
 
         #region GET
         [HttpGet]
-        [Authorize(Roles = "ADMIN")]
-        [Authorize(Roles = "AMIGO_MEDICARE")]
-        [Authorize(Roles = "CUIDADOR")]
-        [Authorize(Roles = "RESPONSÁVEL")]
+        [Authorize(Roles = "ADMIN,AMIGO_MEDICARE,CUIDADOR,RESPONSÁVEL")]
         public async Task<ActionResult<IEnumerable<Posologia>>> GetAllPosologias()
         {
             try
@@ -43,16 +40,62 @@ namespace Medicare_API.Controllers
         #endregion
 
         #region GET {id}
-        [HttpGet("{id}")]
-        [Authorize(Roles = "ADMIN")]
-        [Authorize(Roles = "AMIGO_MEDICARE")]
-        [Authorize(Roles = "CUIDADOR")]
-        [Authorize(Roles = "RESPONSÁVEL")]
+        [HttpGet("id/{id}")]
+        [Authorize(Roles = "ADMIN,AMIGO_MEDICARE,CUIDADOR,RESPONSÁVEL")]
         public async Task<ActionResult<Posologia>> GetPosologiaPorId(int id)
         {
             try
             {
                 var posologia = await _context.Posologias.FirstOrDefaultAsync(p => p.IdPosologia == id);
+
+                if (posologia == null)
+                    return NotFound();
+
+                return Ok(posologia);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Erro interno: {ex.Message}");
+            }
+        }
+        #endregion
+
+        #region GET GET{IdUtilizador} 
+        [HttpGet("utilizador/{utilizador}")]
+        public async Task<ActionResult<Posologia>> GetPosologiaPorNome(int utilizador)
+        {
+            try
+            {
+
+                var posologia = await _context.Posologias
+                .Include(p => p.Remedio)
+                .Where(p => p.IdUtilizador == utilizador)
+                .ToListAsync();
+
+                if (posologia == null)
+                    return NotFound();
+
+                return Ok(posologia);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Erro interno: {ex.Message}");
+            }
+        }
+        #endregion
+
+        #region GET GET{IdAlarme} 
+        [HttpGet("utilizadorPosologia/{id}")]
+        public async Task<ActionResult<Posologia>> GetPosologiaPorAlarme(int id)
+        {
+            try
+            {
+
+                var posologia = await _context.Posologias
+                .Include(p => p.Alarmes)
+                .Include(r => r.Remedio)
+                .Where(p => p.IdUtilizador == id)
+                .ToListAsync();
 
                 if (posologia == null)
                     return NotFound();
@@ -404,7 +447,7 @@ namespace Medicare_API.Controllers
                 for (int i = 0; i < p.DiasPausa; i++) dataAtual = dataAtual.AddDays(1);
             }
         }
-        
+
         #endregion
     }
 }
