@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Medicare_API.Migrations
 {
     /// <inheritdoc />
-    public partial class CriarDataBase : Migration
+    public partial class RecriandoBanco : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -349,6 +349,48 @@ namespace Medicare_API.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "SolicitacoesVinculos",
+                columns: table => new
+                {
+                    IdSolicitacao = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    IdSolicitante = table.Column<int>(type: "int", nullable: false),
+                    IdTipoSolicitante = table.Column<int>(type: "int", nullable: false),
+                    IdReceptor = table.Column<int>(type: "int", nullable: false),
+                    IdTipoReceptor = table.Column<int>(type: "int", nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    DataSolicitacao = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SolicitacoesVinculos", x => x.IdSolicitacao);
+                    table.ForeignKey(
+                        name: "FK_SolicitacoesVinculos_TiposUtilizadores_IdTipoReceptor",
+                        column: x => x.IdTipoReceptor,
+                        principalTable: "TiposUtilizadores",
+                        principalColumn: "IdTipoUtilizador",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_SolicitacoesVinculos_TiposUtilizadores_IdTipoSolicitante",
+                        column: x => x.IdTipoSolicitante,
+                        principalTable: "TiposUtilizadores",
+                        principalColumn: "IdTipoUtilizador",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_SolicitacoesVinculos_Utilizadores_IdReceptor",
+                        column: x => x.IdReceptor,
+                        principalTable: "Utilizadores",
+                        principalColumn: "IdUtilizador",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_SolicitacoesVinculos_Utilizadores_IdSolicitante",
+                        column: x => x.IdSolicitante,
+                        principalTable: "Utilizadores",
+                        principalColumn: "IdUtilizador",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Utilizadores_TiposUtilizadores",
                 columns: table => new
                 {
@@ -524,6 +566,26 @@ namespace Medicare_API.Migrations
                 column: "UtilizadorIdUtilizador");
 
             migrationBuilder.CreateIndex(
+                name: "IX_SolicitacoesVinculos_IdReceptor",
+                table: "SolicitacoesVinculos",
+                column: "IdReceptor");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SolicitacoesVinculos_IdSolicitante",
+                table: "SolicitacoesVinculos",
+                column: "IdSolicitante");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SolicitacoesVinculos_IdTipoReceptor",
+                table: "SolicitacoesVinculos",
+                column: "IdTipoReceptor");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SolicitacoesVinculos_IdTipoSolicitante",
+                table: "SolicitacoesVinculos",
+                column: "IdTipoSolicitante");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Utilizadores_cpfUtilizador",
                 table: "Utilizadores",
                 column: "cpfUtilizador",
@@ -561,6 +623,9 @@ namespace Medicare_API.Migrations
 
             migrationBuilder.DropTable(
                 name: "Responsaveis");
+
+            migrationBuilder.DropTable(
+                name: "SolicitacoesVinculos");
 
             migrationBuilder.DropTable(
                 name: "Utilizadores_TiposUtilizadores");

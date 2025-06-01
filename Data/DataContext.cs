@@ -23,6 +23,8 @@ namespace Medicare_API.Data
             public DbSet<FormaPagamento> FormasPagamento { get; set; }
             public DbSet<Promocao> Promocoes { get; set; }
 
+            public DbSet<SolicitacoesVinculo> SolicitacoesVinculos { get; set; }
+
             public DataContext(DbContextOptions<DataContext> options) : base(options)
             {
             }
@@ -386,7 +388,42 @@ namespace Medicare_API.Data
                         entity.HasOne(p => p.Remedio).WithMany().HasForeignKey(p => p.IdRemedio);
                   });
                   #endregion
+
+                  #region Soliciatacoes
+                  modelBuilder.Entity<SolicitacoesVinculo>(entity =>
+                  {
+
+                        entity.ToTable("SolicitacoesVinculos");
+                        entity.HasKey(sv => sv.IdSolicitacao);
+
+                        modelBuilder.Entity<SolicitacoesVinculo>()
+                        .HasOne(sv => sv.TipoSolicitante)
+                        .WithMany()
+                        .HasForeignKey(sv => sv.IdTipoSolicitante)
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                        modelBuilder.Entity<SolicitacoesVinculo>()
+                        .HasOne(sv => sv.TipoReceptor)
+                        .WithMany()
+                        .HasForeignKey(sv => sv.IdTipoReceptor)
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                        modelBuilder.Entity<SolicitacoesVinculo>()
+                        .HasOne(sv => sv.Solicitante)
+                        .WithMany()
+                        .HasForeignKey(sv => sv.IdSolicitante)
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                        modelBuilder.Entity<SolicitacoesVinculo>()
+                        .HasOne(sv => sv.Receptor)
+                        .WithMany()
+                        .HasForeignKey(sv => sv.IdReceptor)
+                        .OnDelete(DeleteBehavior.Restrict);
+                        #endregion
+                  });
+
             }
       }
 }
+
 

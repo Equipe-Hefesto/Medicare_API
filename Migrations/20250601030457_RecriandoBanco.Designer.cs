@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Medicare_API.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20250426211422_CriarDataBase")]
-    partial class CriarDataBase
+    [Migration("20250601030457_RecriandoBanco")]
+    partial class RecriandoBanco
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -219,7 +219,7 @@ namespace Medicare_API.Migrations
                         .HasColumnType("int")
                         .HasColumnName("diasPausa");
 
-                    b.Property<string>("DiasSemana")
+                    b.PrimitiveCollection<string>("DiasSemana")
                         .IsRequired()
                         .HasMaxLength(16)
                         .HasColumnType("nvarchar(16)")
@@ -391,6 +391,46 @@ namespace Medicare_API.Migrations
                     b.HasIndex("UtilizadorIdUtilizador");
 
                     b.ToTable("Responsaveis", (string)null);
+                });
+
+            modelBuilder.Entity("Medicare_API.Models.SolicitacoesVinculo", b =>
+                {
+                    b.Property<int>("IdSolicitacao")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdSolicitacao"));
+
+                    b.Property<DateTime>("DataSolicitacao")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("IdReceptor")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IdSolicitante")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IdTipoReceptor")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IdTipoSolicitante")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("IdSolicitacao");
+
+                    b.HasIndex("IdReceptor");
+
+                    b.HasIndex("IdSolicitante");
+
+                    b.HasIndex("IdTipoReceptor");
+
+                    b.HasIndex("IdTipoSolicitante");
+
+                    b.ToTable("SolicitacoesVinculos", (string)null);
                 });
 
             modelBuilder.Entity("Medicare_API.Models.TipoAgendamento", b =>
@@ -739,6 +779,41 @@ namespace Medicare_API.Migrations
                     b.Navigation("ResponsavelUser");
 
                     b.Navigation("TipoParentesco");
+                });
+
+            modelBuilder.Entity("Medicare_API.Models.SolicitacoesVinculo", b =>
+                {
+                    b.HasOne("Medicare_API.Models.Utilizador", "Receptor")
+                        .WithMany()
+                        .HasForeignKey("IdReceptor")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Medicare_API.Models.Utilizador", "Solicitante")
+                        .WithMany()
+                        .HasForeignKey("IdSolicitante")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Medicare_API.Models.TipoUtilizador", "TipoReceptor")
+                        .WithMany()
+                        .HasForeignKey("IdTipoReceptor")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Medicare_API.Models.TipoUtilizador", "TipoSolicitante")
+                        .WithMany()
+                        .HasForeignKey("IdTipoSolicitante")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Receptor");
+
+                    b.Navigation("Solicitante");
+
+                    b.Navigation("TipoReceptor");
+
+                    b.Navigation("TipoSolicitante");
                 });
 
             modelBuilder.Entity("Medicare_API.Models.UtilizadorTipoUtilizador", b =>

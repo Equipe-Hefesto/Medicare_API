@@ -11,7 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 
         // Registra o DataContext com o contêiner de serviços
         builder.Services.AddDbContext<DataContext>(options =>
-            options.UseSqlServer(builder.Configuration.GetConnectionString("SomeeConnection")));
+            options.UseSqlServer(builder.Configuration.GetConnectionString("conexaoPeu")));
 
         // Outros serviços e configurações
         
