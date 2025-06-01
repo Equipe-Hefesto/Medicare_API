@@ -79,8 +79,7 @@ namespace Medicare_API.Controllers
 
         #region POST
         [HttpPost]
-        [Authorize(Roles = "ADMIN")]
-        [Authorize(Roles = "AMIGO_MEDICARE")]
+        
         public async Task<ActionResult> PostRemedio([FromBody] RemedioCreateDTO dto)
         {
             try

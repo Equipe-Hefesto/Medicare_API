@@ -20,7 +20,7 @@ namespace Medicare_API.Models.DTOs
 
     public class UtilizadorUpdateDTO
     {
-        //public int IdUtilizador { get; set; }
+        public int IdUtilizador { get; set; }
         public required string CPF { get; set; }
         public required string Nome { get; set; }
         public required string Sobrenome { get; set; }

@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Medicare_API.Data;
 using Medicare_API.Models;
 using Medicare_API.Models.DTOs;
@@ -20,11 +21,12 @@ namespace Medicare_API.Controllers
 
         #region GET
         [HttpGet]
-        [Authorize(Roles = "ADMIN,AMIGO_MEDICARE,CUIDADOR,RESPONSÁVEL")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<IEnumerable<Posologia>>> GetAllPosologias()
         {
             try
             {
+
                 var posologias = await _context.Posologias.ToListAsync();
 
                 if (posologias == null || posologias.Count == 0)
@@ -41,7 +43,7 @@ namespace Medicare_API.Controllers
 
         #region GET {id}
         [HttpGet("id/{id}")]
-        [Authorize(Roles = "ADMIN,AMIGO_MEDICARE,CUIDADOR,RESPONSÁVEL")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<Posologia>> GetPosologiaPorId(int id)
         {
             try
@@ -61,15 +63,23 @@ namespace Medicare_API.Controllers
         #endregion
 
         #region GET GET{IdUtilizador} 
-        [HttpGet("utilizador/{utilizador}")]
-        public async Task<ActionResult<Posologia>> GetPosologiaPorNome(int utilizador)
+        [HttpGet("utilizador")]
+        public async Task<ActionResult<IEnumerable<Posologia>>> GetPosologiaPorUtilizador()
         {
             try
             {
+                //Coleta o id do Utilizador autenticado
+                var userString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+                //Converte a string para Int e comparar com o ID do utilzador Existente    
+                if (!int.TryParse(userString, out int userId))
+                {
+                    return Unauthorized();
+                }
 
                 var posologia = await _context.Posologias
                 .Include(p => p.Remedio)
-                .Where(p => p.IdUtilizador == utilizador)
+                .Where(p => p.IdUtilizador == userId)
                 .ToListAsync();
 
                 if (posologia == null)
@@ -85,16 +95,22 @@ namespace Medicare_API.Controllers
         #endregion
 
         #region GET GET{IdAlarme} 
-        [HttpGet("utilizadorPosologia/{id}")]
-        public async Task<ActionResult<Posologia>> GetPosologiaPorAlarme(int id)
+        [HttpGet("utilizadorPosologia")]
+        public async Task<ActionResult<IEnumerable<Posologia>>> GetPosologiaPorAlarme()
         {
             try
             {
+                var userString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+                if (!int.TryParse(userString, out int userId))
+                {
+                    return Unauthorized();
+                }
 
                 var posologia = await _context.Posologias
                 .Include(p => p.Alarmes)
                 .Include(r => r.Remedio)
-                .Where(p => p.IdUtilizador == id)
+                .Where(p => p.IdUtilizador == userId)
                 .ToListAsync();
 
                 if (posologia == null)
@@ -111,8 +127,7 @@ namespace Medicare_API.Controllers
 
         #region POST
         [HttpPost]
-        [Authorize(Roles = "ADMIN")]
-        [Authorize(Roles = "AMIGO_MEDICARE")]
+
         public async Task<ActionResult> PostPosologia([FromBody] PosologiaCreateDTO dto)
         {
             try
@@ -192,23 +207,38 @@ namespace Medicare_API.Controllers
 
         #region PUT
         [HttpPut("{id}")]
-        [Authorize(Roles = "ADMIN")]
-        [Authorize(Roles = "AMIGO_MEDICARE")]
+        [Authorize(Roles = "ADMIN,AMIGO_MEDICARE")]
         public async Task<ActionResult> PutPosologia(int id, [FromBody] PosologiaUpdateDTO dto)
         {
             try
             {
+                // Pega o ID do usuário logado no token
+                var userString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (!int.TryParse(userString, out int userId))
+                    return Unauthorized();
 
-                if (!await _context.Posologias
-                    .AnyAsync(p => p.IdRemedio == dto.IdRemedio && p.IdUtilizador == dto.IdUtilizador && p.DataInicio == dto.DataInicio))
-                {
-                    return BadRequest($"Não existe uma posologia para o Remédio {dto.IdRemedio} e Utilizador {dto.IdUtilizador} iniciada na data {dto.DataInicio}.");
-                }
-
+                // Busca a posologia pelo id
                 var p = await _context.Posologias.FirstOrDefaultAsync(p => p.IdPosologia == id);
                 if (p == null)
                     return NotFound($"Posologia com ID {id} não encontrada.");
 
+                // Pega os roles do usuário autenticado
+                var userRoles = User.FindAll(ClaimTypes.Role).Select(r => r.Value);
+                bool isAdmin = userRoles.Contains("ADMIN");
+                bool isAmigoMedicare = userRoles.Contains("AMIGO_MEDICARE");
+
+                // Valida se o usuário é dono ou tem permissão
+                if (p.IdUtilizador != userId && !isAdmin && !isAmigoMedicare)
+                    return Forbid("Você não tem permissão para atualizar esta posologia.");
+
+                // Valida se existe posologia para remédio, usuário e data inicio
+                if (!await _context.Posologias
+                    .AnyAsync(pos => pos.IdRemedio == dto.IdRemedio && pos.IdUtilizador == dto.IdUtilizador && pos.DataInicio == dto.DataInicio))
+                {
+                    return BadRequest($"Não existe uma posologia para o Remédio {dto.IdRemedio} e Utilizador {dto.IdUtilizador} iniciada na data {dto.DataInicio}.");
+                }
+
+                // Atualiza os dados da posologia
                 var remedio = await _context.Remedios.FirstOrDefaultAsync(r => r.IdRemedio == dto.IdRemedio);
                 var utilizador = await _context.Utilizadores.FirstOrDefaultAsync(u => u.IdUtilizador == dto.IdUtilizador);
                 var tipoFarmaceutico = await _context.TiposFarmaceutico.FirstOrDefaultAsync(f => f.IdTipoFarmaceutico == dto.IdTipoFarmaceutico);
@@ -237,6 +267,7 @@ namespace Medicare_API.Controllers
                 _context.Posologias.Update(p);
                 await _context.SaveChangesAsync();
 
+                // Remove horários e alarmes antigos
                 var horarios = _context.Horarios.Where(h => h.IdPosologia == p.IdPosologia).ToList();
                 var alarmes = _context.Alarmes.Where(a => a.IdPosologia == p.IdPosologia).ToList();
 
@@ -244,8 +275,10 @@ namespace Medicare_API.Controllers
                 _context.Alarmes.RemoveRange(alarmes);
                 await _context.SaveChangesAsync();
 
+                // Cria novos horários com base no DTO
                 await PostHorarios(p, dto.Horarios);
 
+                // Dispara agendamento baseado no tipo
                 switch (p.IdTipoAgendamento)
                 {
                     case 1:
@@ -274,7 +307,6 @@ namespace Medicare_API.Controllers
         #region DELETE
         [HttpDelete("{id}")]
         [Authorize(Roles = "ADMIN")]
-        [Authorize(Roles = "AMIGO_MEDICARE")]
         public async Task<ActionResult> DeletePosologia(int id)
         {
             try

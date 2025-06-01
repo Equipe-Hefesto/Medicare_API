@@ -31,18 +31,11 @@ namespace Medicare_API.Controllers
         #region GET
 
         [HttpGet("GetAll")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<IEnumerable<Utilizador>>> ListarUtilizadores()
         {
             try
             {
-                var userId = User.GetUserId();
-                var isAdmin = User.IsAdmin();
-
-                // Se não for admin e estiver tentando editar outro usuário, bloqueia
-                if (!isAdmin)
-                {
-                    return Forbid("Você não tem autorização para Utilizar esse método");
-                }
 
                 var utilizadores = await _context.Utilizadores.ToListAsync();
                 if (utilizadores == null || utilizadores.Count == 0)
@@ -61,25 +54,25 @@ namespace Medicare_API.Controllers
 
         #region GET {id}
 
-        [HttpGet("{id}")]
+        [HttpGet("GetSingle")]
 
-        public async Task<ActionResult<Utilizador>> GetUtilizador(int id)
+        public async Task<ActionResult<Utilizador>> GetUtilizador()
         {
 
-            var userId = User.GetUserId();
-            var isAdmin = User.IsAdmin();
+            var userString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            // Se não for admin e estiver tentando editar outro usuário, bloqueia
-            if (!isAdmin && userId != id)
-                return Forbid("Você não tem permissão para editar esse utilizador.");
+            if (!int.TryParse(userString, out int userId))
+            {
+                return Unauthorized("Token invalido");
+            }
 
-            var utilizadores = await _context.Utilizadores.FindAsync(id);
+            var utilizadores = await _context.Utilizadores.Where(p => p.IdUtilizador == userId).ToListAsync();
             if (utilizadores == null)
-                return NotFound($"O Utilizador com o ID {id} não foi encontrado.");
+                return NotFound($"O Utilizador com o ID {userId} não foi encontrado.");
 
             try
             {
-                var utilizador = await _context.Utilizadores.FindAsync(id);
+                var utilizador = await _context.Utilizadores.FindAsync(userId);
                 if (utilizador == null)
                 {
                     return NotFound();
@@ -136,43 +129,43 @@ namespace Medicare_API.Controllers
             }
         }
         #endregion
-
         #region PUT
-        [HttpPut("{id}")]
-        public async Task<ActionResult> PutAsync(int id, [FromBody] UtilizadorUpdateDTO dto)
+        [HttpPut("Update")]
+        public async Task<ActionResult> PutAsync([FromBody] UtilizadorUpdateDTO dto)
         {
             try
             {
-                var userId = User.GetUserId();
-                var isAdmin = User.IsAdmin();
+                // Verifica se o usuário autenticado é o mesmo do ID informado
+                var userString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (!int.TryParse(userString, out int userId))
+                    return Unauthorized("Token inválido.");
 
-                // Se não for admin e estiver tentando editar outro usuário, bloqueia
-                if (!isAdmin && userId != id)
-                    return Forbid("Você não tem permissão para editar esse utilizador.");
+                if (dto.IdUtilizador != userId)
+                    return Forbid("Você não pode alterar dados de outro usuário.");
 
-                var utilizador = await _context.Utilizadores.FindAsync(id);
+                // Busca o usuário a ser atualizado
+                var utilizador = await _context.Utilizadores.FindAsync(userId);
                 if (utilizador == null)
-                    return NotFound($"O Utilizador com o ID {id} não foi encontrado.");
+                    return NotFound($"O Utilizador com o ID {userId} não foi encontrado.");
 
+                // Atualiza os campos
+                utilizador.CPF = dto.CPF;
+                utilizador.Nome = dto.Nome;
+                utilizador.Sobrenome = dto.Sobrenome;
+                utilizador.DtNascimento = dto.DtNascimento;
+                utilizador.Email = dto.Email;
+                utilizador.Telefone = dto.Telefone;
+                utilizador.Username = dto.Username;
 
-                if (!await _context.Utilizadores.AnyAsync(x => x.IdUtilizador == id))
-                    return NotFound($"O Utilizador com o ID {id} não foi encontrado.");
+                // Atualiza a senha (caso venha uma nova senha no DTO)
+                if (!string.IsNullOrWhiteSpace(dto.SenhaString))
+                {
+                    Criptografia.CriarPasswordHash(dto.SenhaString, out byte[] hash, out byte[] salt);
+                    utilizador.SenhaHash = hash;
+                    utilizador.SenhaSalt = salt;
+                }
 
-                Criptografia.CriarPasswordHash(dto.SenhaString, out byte[] hash, out byte[] salt);
-
-                var u = new Utilizador();
-
-                u.CPF = dto.CPF;
-                u.Nome = dto.Nome;
-                u.Sobrenome = dto.Sobrenome;
-                u.DtNascimento = dto.DtNascimento;
-                u.Email = dto.Email;
-                u.Telefone = dto.Telefone;
-                u.Username = dto.Username;
-                u.SenhaHash = hash;
-                u.SenhaSalt = salt;
-
-                _context.Utilizadores.Update(u);
+                _context.Utilizadores.Update(utilizador);
                 await _context.SaveChangesAsync();
 
                 return NoContent();
@@ -184,17 +177,26 @@ namespace Medicare_API.Controllers
         }
         #endregion
 
+
         #region DELETE
 
-        [HttpDelete("{id}")]
+        [HttpDelete("Delete")]
         [Authorize(Roles = "ADMIN")]
-        public async Task<ActionResult> DeleteUtilizador(int id)
+        public async Task<ActionResult> DeleteUtilizador()
         {
             try
             {
-                var utilizador = await _context.Utilizadores.FirstOrDefaultAsync(x => x.IdUtilizador == id);
+
+                var userString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+                if (!int.TryParse(userString, out int userId))
+                {
+                    return Unauthorized("Token Invalido");
+                } 
+
+                var utilizador = await _context.Utilizadores.FirstOrDefaultAsync(x => x.IdUtilizador == userId);
                 if (utilizador == null)
-                    return NotFound($"O Utilizador com o ID {id} não foi encontrado.");
+                    return NotFound($"O Utilizador com o ID {userId} não foi encontrado.");
 
                 _context.Utilizadores.Remove(utilizador);
                 await _context.SaveChangesAsync();
@@ -276,12 +278,6 @@ namespace Medicare_API.Controllers
             {
                 claims.Add(new Claim(ClaimTypes.Role, tipo));
             }
-
-
-
-
-
-
 
             // Crie a chave de segurança
             var chave = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(chaveSecreta));

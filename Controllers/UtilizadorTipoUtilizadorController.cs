@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Medicare_API.Data;
 using Medicare_API.Models;
 using Medicare_API.Models.DTOs;
@@ -20,7 +21,7 @@ namespace Medicare_API.Controllers
 
         #region GET
         [HttpGet]
-        [Authorize(Roles ="ADMIN")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<IEnumerable<UtilizadorTipoUtilizador>>> GetAllRelacionamentos()
         {
             try
@@ -59,16 +60,24 @@ namespace Medicare_API.Controllers
             {
                 return StatusCode(500, $"Erro interno: {ex.Message}");
             }
-            
+
         }
         #endregion
 
         #region POST
         [HttpPost]
+        [AllowAnonymous]
         public async Task<ActionResult> PostRelacionamento([FromBody] UtilizadorTipoUtilizadorCreateDTO dto)
         {
             try
             {
+                var userString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+                if (!int.TryParse(userString, out int userId))
+                {
+                    return Unauthorized("Token inválido");
+                }
+
                 // Validar se o Utilizador existe
                 var utilizador = await _context.Utilizadores.FirstOrDefaultAsync(u => u.IdUtilizador == dto.IdUtilizador);
                 if (utilizador == null)
@@ -90,7 +99,12 @@ namespace Medicare_API.Controllers
 
 
                 var ut = new UtilizadorTipoUtilizador();
-                ut.IdUtilizador = dto.IdUtilizador;
+                /*ut.IdUtilizador = dto.IdUtilizador;
+                    Não iremos mais utilizar isso pois, o id do utlizador está no token
+                */
+
+                //Pega o Id do utilizador via Token
+                ut.IdUtilizador = userId;
                 ut.IdTipoUtilizador = dto.IdTipoUtilizador;
                 ut.Utilizador = utilizador;
                 ut.TipoUtilizador = tipo;
@@ -110,36 +124,46 @@ namespace Medicare_API.Controllers
 
         #region PUT
         [HttpPut("{idUtilizador}/{idTipo}")]
-        [Authorize(Roles ="ADMIN")]
         public async Task<ActionResult> PutRelacionamento(int idUtilizador, int idTipo, [FromBody] UtilizadorTipoUtilizadorUpdateDTO dto)
         {
             try
             {
-                var utilizador = await _context.Utilizadores.FirstOrDefaultAsync(u => u.IdUtilizador == dto.IdUtilizador);
-                if (utilizador == null)
-                    return BadRequest($"O Utilizador com o ID {dto.IdUtilizador} não foi encontrado.");
+                // Pega o ID do usuário autenticado via token
+                var userString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-                // Validar se o Tipo existe
-                var tipo = await _context.TiposUtilizadores.FirstOrDefaultAsync(t => t.IdTipoUtilizador == dto.IdTipoUtilizador);
+                if (!int.TryParse(userString, out int userId))
+                    return Unauthorized("Token inválido");
+
+                // Confirma que o usuário só pode alterar os próprios dados
+                if (idUtilizador != userId)
+                    return Forbid("Você não pode alterar dados de outro usuário.");
+
+                // Verifica se o relacionamento original existe
+                var relacionamento = await _context.UtilizadoresTiposUtilizadores
+                    .FirstOrDefaultAsync(ut => ut.IdUtilizador == idUtilizador && ut.IdTipoUtilizador == idTipo);
+
+                if (relacionamento == null)
+                    return NotFound("Relacionamento original não encontrado.");
+
+                // Verifica se o novo relacionamento já existe (evita duplicação)
+                bool relacionamentoDuplicado = await _context.UtilizadoresTiposUtilizadores
+                    .AnyAsync(ut => ut.IdUtilizador == userId && ut.IdTipoUtilizador == dto.IdTipoUtilizador);
+
+                if (relacionamentoDuplicado)
+                    return BadRequest("O novo relacionamento já existe.");
+
+                // Busca o novo tipo de utilizador
+                var tipo = await _context.TiposUtilizadores
+                    .FirstOrDefaultAsync(t => t.IdTipoUtilizador == dto.IdTipoUtilizador);
+
                 if (tipo == null)
-                    return BadRequest($"O Tipo com o ID {dto.IdTipoUtilizador} não foi encontrado.");
+                    return BadRequest($"O Tipo com ID {dto.IdTipoUtilizador} não foi encontrado.");
 
-                // Validar se o relacionamento já existe
-                if (!await _context.UtilizadoresTiposUtilizadores.AnyAsync(ut => ut.IdUtilizador == dto.IdUtilizador && ut.IdTipoUtilizador == dto.IdTipoUtilizador))
-                {
-                    return BadRequest($"A relação IdUtilizador {dto.IdUtilizador} + IdTipoUtilizador {dto.IdTipoUtilizador} não foi encontrado.");
-                }
+                // Atualiza o relacionamento existente
+                relacionamento.IdTipoUtilizador = dto.IdTipoUtilizador;
+                relacionamento.TipoUtilizador = tipo;
 
-                //Validar informações
-
-                var ut = new UtilizadorTipoUtilizador();
-                ut.IdUtilizador = dto.IdUtilizador;
-                ut.IdTipoUtilizador = dto.IdTipoUtilizador;
-                ut.Utilizador = utilizador;
-                ut.TipoUtilizador = tipo;
-
-
-                _context.UtilizadoresTiposUtilizadores.Update(ut);
+                _context.UtilizadoresTiposUtilizadores.Update(relacionamento);
                 await _context.SaveChangesAsync();
 
                 return NoContent();
@@ -151,9 +175,12 @@ namespace Medicare_API.Controllers
         }
         #endregion
 
+
+
         #region DELETE
         [HttpDelete("{idUtilizador}/{idTipo}")]
-        [Authorize(Roles ="ADMIN")]
+
+        //Revisar isso pois não está funcionando        
         public async Task<ActionResult> DeleteCuidador(int idUtilizador, int idTipo)
         {
             try
