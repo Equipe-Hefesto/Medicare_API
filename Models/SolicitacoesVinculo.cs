@@ -19,8 +19,8 @@ namespace Medicare_API.Models
         public DateTime DataSolicitacao { get; set; }
         public Utilizador Solicitante { get; set; }        
         public Utilizador Receptor { get; set; }    
-        public TipoUtilizador TipoSolicitante { get; set; }
-        public TipoUtilizador TipoReceptor { get; set; }
+        public UtilizadorTipoUtilizador TipoSolicitante { get; set; }
+        public UtilizadorTipoUtilizador TipoReceptor { get; set; }
 
     }
 }
