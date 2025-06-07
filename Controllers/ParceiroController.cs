@@ -20,7 +20,7 @@ namespace Medicare_API.Controllers
 
         #region GET
         [HttpGet]
-        [Authorize(Roles = "ADMIN")]
+   
         public async Task<ActionResult<IEnumerable<Parceiro>>> GetAllParceiros()
         {
             try
@@ -40,8 +40,7 @@ namespace Medicare_API.Controllers
 
         #region GET {id}
         [HttpGet("{id}")]
-        [Authorize(Roles = "ADMIN")]
-        [Authorize(Roles = "PARCEIRO")]
+       
         public async Task<ActionResult<Parceiro>> GetParceiro(int id)
         {
             try
@@ -61,9 +60,7 @@ namespace Medicare_API.Controllers
 
         #region POST
         [HttpPost]
-        [Authorize(Roles = "ADMIN")]
-        [Authorize(Roles = "PARCEIRO")]
-        public async Task<ActionResult> PostParceiro([FromBody] ParceiroCreateDTO dto)
+             public async Task<ActionResult> PostParceiro([FromBody] ParceiroCreateDTO dto)
         {
             try
             {

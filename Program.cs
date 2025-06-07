@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using Medicare_API.Controllers;
 using Medicare_API.Data;
 using Medicare_API.Models;
@@ -11,7 +12,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Registra o DataContext com o contêiner de serviços
 builder.Services.AddDbContext<DataContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("SomeeConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("SomeeConnection")).EnableSensitiveDataLogging());
+
 
 // Outros serviços e configurações
 builder.Services.AddControllers();
@@ -22,6 +24,12 @@ builder.Services.AddControllers();
 // Configuração do Swagger (se estiver usando)
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    });
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

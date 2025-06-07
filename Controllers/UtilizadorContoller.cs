@@ -94,6 +94,7 @@ namespace Medicare_API.Controllers
         {
             try
             {
+
                 if (await _context.Utilizadores.AnyAsync(t => t.CPF == dto.CPF))
                 {
                     return BadRequest($"O CPF {dto.CPF} informado já existe.");

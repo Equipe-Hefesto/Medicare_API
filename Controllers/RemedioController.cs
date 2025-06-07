@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Medicare_API.Data;
 using Medicare_API.Models;
 using Medicare_API.Models.DTOs;
@@ -26,23 +27,10 @@ namespace Medicare_API.Controllers
         {
             try
             {
-                var userId = User.GetUserId();
-                var isAdmin = User.IsAdmin();
-                Utilizador utilizador = new Utilizador();
                 
-                var utilizador1 = _context.Posologias
-                       .Include(u => u.Utilizador)
-                       .ThenInclude(ut => ut.IdUtilizador)
-                       .FirstOrDefault(u => u.IdUtilizador == utilizador.IdUtilizador);
-
-                // Se não for admin e estiver tentando editar outro usuário, bloqueia
-                if (!isAdmin && userId != utilizador.IdUtilizador)
-                {
-                    return Forbid("Você não tem autorização para Utilizar esse método");
-                }
-
                 var remedios = await _context.Remedios.ToListAsync();
-                if (remedios == null || remedios.Count == 0)
+
+                if (remedios == null)
                     return NotFound();
 
                 return Ok(remedios);
@@ -54,12 +42,8 @@ namespace Medicare_API.Controllers
         }
         #endregion
 
-        #region GET {id}
         [HttpGet("{id}")]
-        [Authorize(Roles = "ADMIN")]
-        [Authorize(Roles = "AMIGO_MEDICARE")]
-        [Authorize(Roles = "RESPONSAVEL")]
-        [Authorize(Roles = "CUIDADOR")]
+        #region GET {id}
         public async Task<ActionResult<Remedio>> GetRemedioPorId(int id)
         {
             try
@@ -79,7 +63,6 @@ namespace Medicare_API.Controllers
 
         #region POST
         [HttpPost]
-        
         public async Task<ActionResult> PostRemedio([FromBody] RemedioCreateDTO dto)
         {
             try
@@ -112,8 +95,6 @@ namespace Medicare_API.Controllers
         #region PUT
         [HttpPut("{id}")]
         [Authorize(Roles = "ADMIN")]
-        [Authorize(Roles = "AMIGO_MEDICARE")]
-
         public async Task<ActionResult> PutTipo(int id, [FromBody] RemedioUpdateDTO dto)
         {
             try
@@ -142,7 +123,6 @@ namespace Medicare_API.Controllers
         #region DELETE
         [HttpDelete("{id}")]
         [Authorize(Roles = "ADMIN")]
-        [Authorize(Roles = "AMIGO_MEDICARE")]
         public async Task<ActionResult> DeleteTipo(int id)
         {
             try

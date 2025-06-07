@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Xml;
 using Medicare_API.Data;
 using Medicare_API.Models;
 using Medicare_API.Models.DTOs;
@@ -125,13 +126,16 @@ namespace Medicare_API.Controllers
         }
         #endregion
 
-        #region POST
-        [HttpPost]
 
+        #region POST
+        [HttpPost("AddPoso")]
         public async Task<ActionResult> PostPosologia([FromBody] PosologiaCreateDTO dto)
         {
             try
             {
+
+                
+
                 if (await _context.Posologias
                     .AnyAsync(p => p.IdRemedio == dto.IdRemedio && p.IdUtilizador == dto.IdUtilizador && p.Quantidade == dto.Quantidade && p.IdTipoFarmaceutico == dto.IdTipoFarmaceutico))
                 {
@@ -206,47 +210,57 @@ namespace Medicare_API.Controllers
         #endregion
 
         #region PUT
-        [HttpPut("{id}")]
-        [Authorize(Roles = "ADMIN,AMIGO_MEDICARE")]
-        public async Task<ActionResult> PutPosologia(int id, [FromBody] PosologiaUpdateDTO dto)
+        [HttpPut("PutPosologia")]
+        public async Task<ActionResult> PutPosologia([FromBody] PosologiaUpdateDTO dto)
         {
             try
             {
+
+
+
                 // Pega o ID do usuário logado no token
                 var userString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (!int.TryParse(userString, out int userId))
                     return Unauthorized();
 
+                var idRemedio = dto.IdRemedio;
+                var dataInicio = dto.DataInicio;
+                var utilizadortes = dto.IdUtilizador;
+                var tpFar = dto.IdTipoFarmaceutico;
+
+                bool exists = await _context.Posologias.AnyAsync(pos =>
+                    pos.IdRemedio == idRemedio &&
+                    pos.IdUtilizador == userId &&
+                    pos.DataInicio == dataInicio);
+
+
+
                 // Busca a posologia pelo id
-                var p = await _context.Posologias.FirstOrDefaultAsync(p => p.IdPosologia == id);
+                var p = await _context.Posologias.FirstOrDefaultAsync(p => p.IdUtilizador == userId);
                 if (p == null)
-                    return NotFound($"Posologia com ID {id} não encontrada.");
-
-                // Pega os roles do usuário autenticado
-                var userRoles = User.FindAll(ClaimTypes.Role).Select(r => r.Value);
-                bool isAdmin = userRoles.Contains("ADMIN");
-                bool isAmigoMedicare = userRoles.Contains("AMIGO_MEDICARE");
-
-                // Valida se o usuário é dono ou tem permissão
-                if (p.IdUtilizador != userId && !isAdmin && !isAmigoMedicare)
-                    return Forbid("Você não tem permissão para atualizar esta posologia.");
+                    return NotFound($"Nenhuma posologia encontrada para o usuário com ID {userId}.");
 
                 // Valida se existe posologia para remédio, usuário e data inicio
                 if (!await _context.Posologias
-                    .AnyAsync(pos => pos.IdRemedio == dto.IdRemedio && pos.IdUtilizador == dto.IdUtilizador && pos.DataInicio == dto.DataInicio))
+                    .AnyAsync(pos => pos.IdRemedio == dto.IdRemedio && pos.IdUtilizador == userId && pos.DataInicio == dto.DataInicio))
                 {
-                    return BadRequest($"Não existe uma posologia para o Remédio {dto.IdRemedio} e Utilizador {dto.IdUtilizador} iniciada na data {dto.DataInicio}.");
+                    return BadRequest($"Não existe uma posologia para o Remédio {dto.IdRemedio} e Utilizador {userId} iniciada na data {dto.DataInicio}.");
                 }
 
                 // Atualiza os dados da posologia
                 var remedio = await _context.Remedios.FirstOrDefaultAsync(r => r.IdRemedio == dto.IdRemedio);
-                var utilizador = await _context.Utilizadores.FirstOrDefaultAsync(u => u.IdUtilizador == dto.IdUtilizador);
+                var utilizador = await _context.Utilizadores.FirstOrDefaultAsync(u => u.IdUtilizador == userId);
                 var tipoFarmaceutico = await _context.TiposFarmaceutico.FirstOrDefaultAsync(f => f.IdTipoFarmaceutico == dto.IdTipoFarmaceutico);
                 var tipoGrandeza = await _context.TiposGrandeza.FirstOrDefaultAsync(g => g.IdTipoGrandeza == dto.IdTipoGrandeza);
                 var tipoAgendamento = await _context.TiposAgendamento.FirstOrDefaultAsync(a => a.IdTipoAgendamento == dto.IdTipoAgendamento);
 
+                if (p.IdUtilizador != userId)
+                {
+                    return Forbid("Você não pode alterar dados de outro usuário");
+                }
+
                 p.IdRemedio = dto.IdRemedio;
-                p.IdUtilizador = dto.IdUtilizador;
+                p.IdUtilizador = userId;
                 p.IdTipoFarmaceutico = dto.IdTipoFarmaceutico;
                 p.IdTipoGrandeza = dto.IdTipoGrandeza;
                 p.IdTipoAgendamento = dto.IdTipoAgendamento;
@@ -263,6 +277,16 @@ namespace Medicare_API.Controllers
                 p.TipoFarmaceutico = tipoFarmaceutico!;
                 p.TipoGrandeza = tipoGrandeza!;
                 p.TipoAgendamento = tipoAgendamento!;
+
+                if (idRemedio == null)
+                    return BadRequest("Remédio não encontrado.");
+
+                if (utilizadortes == null)
+                    return BadRequest("Utilizador não encontrado.");
+
+                if (tpFar == null)
+                    return BadRequest("Tipo Farmacêutico não encontrado.");
+
 
                 _context.Posologias.Update(p);
                 await _context.SaveChangesAsync();

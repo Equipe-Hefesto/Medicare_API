@@ -20,7 +20,7 @@ namespace Medicare_API.Controllers
 
         #region GET
         [HttpGet]
-        [Authorize(Roles = "ADMIN")]
+        
         public async Task<ActionResult<IEnumerable<FormaPagamento>>> GetAllFormasPagamento()
         {
             try
@@ -40,7 +40,7 @@ namespace Medicare_API.Controllers
 
         #region GET {id}
         [HttpGet("{id}")]
-        [Authorize(Roles = "ADMIN")]
+        
         public async Task<ActionResult<FormaPagamento>> GetFormaPagamentoPorId(int id)
         {
             try
@@ -60,7 +60,7 @@ namespace Medicare_API.Controllers
 
         #region POST
         [HttpPost]
-        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles ="ADMIN")]
         public async Task<ActionResult> PostFormaPagamento([FromBody] FormaPagamentoCreateDTO dto)
         {
             try
@@ -93,7 +93,7 @@ namespace Medicare_API.Controllers
 
         #region PUT
         [HttpPut("{id}")]
-        [Authorize(Roles = "ADMIN")]
+        
         public async Task<ActionResult> PutFormaPagamento(int id, [FromBody] FormaPagamentoUpdateDTO dto)
         {
             try

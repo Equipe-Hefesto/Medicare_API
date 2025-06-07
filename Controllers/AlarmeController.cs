@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+using System.Security.Claims;
 using Medicare_API.Data;
 using Medicare_API.Models;
 using Medicare_API.Models.DTOs;
@@ -19,9 +21,8 @@ namespace Medicare_API.Controllers
         }
 
         #region GET
-        [HttpGet]
+        [HttpGet("GetAll")]
         [Authorize(Roles = "ADMIN")]
-        [Authorize(Roles = "AMIGO_MEDICARE")]
         public async Task<ActionResult<IEnumerable<Alarme>>> GetAllAlarmes()
         {
             try
@@ -40,14 +41,24 @@ namespace Medicare_API.Controllers
         #endregion
 
         #region GET {id}
-        [HttpGet("{id}")]
-        [Authorize(Roles = "ADMIN")]
-        [Authorize(Roles = "AMIGO_MEDICARE")]
-        public async Task<ActionResult<Alarme>> GetAlarmePorId(int id)
+        [HttpGet("utilizador")]
+        public async Task<ActionResult<IEnumerable<Alarme>>> GetAlarmePorId()
         {
             try
             {
-                var alarme = await _context.Alarmes.FindAsync(id);
+
+                var userString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+                if (!int.TryParse(userString, out int userId))
+                {
+                    return Unauthorized();
+                }
+
+                var alarme = await _context.Alarmes.Include(p => p.Posologia)
+                .Where(p => p.Posologia.IdUtilizador == userId)
+                .ToListAsync();
+
+                //var alarme = await _context.Alarmes.FindAsync(id);
                 if (alarme == null)
                     return NotFound();
 
@@ -62,8 +73,6 @@ namespace Medicare_API.Controllers
 
         #region POST
         [HttpPost]
-        [Authorize(Roles = "ADMIN")]
-        [Authorize(Roles = "AMIGO_MEDICARE")]
         public async Task<ActionResult> PostAlarme([FromBody] AlarmeCreateDTO dto)
         {
             try
@@ -73,7 +82,19 @@ namespace Medicare_API.Controllers
                     return BadRequest($"O Alarme da Posologia  {dto.IdPosologia} das {dto.DataHora} informado já existe.");
                 }
 
-                var posologia = await _context.Posologias.FirstOrDefaultAsync(p => p.IdPosologia == dto.IdPosologia);
+                var userString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+                if (!int.TryParse(userString, out int userId))
+                {
+                    return Unauthorized();
+                }
+
+                var posologia = await _context.Posologias.FirstOrDefaultAsync(p => p.IdPosologia == dto.IdPosologia && p.IdUtilizador == userId);
+
+                if (posologia == null)
+                {
+                    return Forbid("Você não tem permissão para adicionar alarmes a essa posologia.");
+                }
 
                 var ultimoId = await _context.Alarmes.OrderByDescending(x => x.IdAlarme).Select(x => x.IdAlarme).FirstOrDefaultAsync();
 
@@ -99,18 +120,22 @@ namespace Medicare_API.Controllers
 
         #region PUT
         [HttpPut("{id}")]
-        [Authorize(Roles = "ADMIN")]
-        [Authorize(Roles = "AMIGO_MEDICARE")]
+       
         public async Task<ActionResult> PutAlarme(int id, [FromBody] AlarmeUpdateDTO dto)
         {
             try
             {
+
+                var userString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+                if(!int.TryParse(userString, out int userId))
+
                 if (!await _context.Alarmes.AnyAsync(a => a.IdPosologia == dto.IdPosologia && a.DataHora == dto.DataHora))
                 {
-                    return BadRequest($"O Alarme da Posologia  {dto.IdPosologia} das {dto.DataHora} informado já existe.");
+                    return BadRequest($"O Alarme da Posologia {dto.IdPosologia} das {dto.DataHora} informado já existe.");
                 }
 
-                var posologia = await _context.Posologias.FirstOrDefaultAsync(p => p.IdPosologia == dto.IdPosologia);
+                var posologia = await _context.Posologias.FirstOrDefaultAsync(p => p.IdPosologia == dto.IdPosologia && p.IdUtilizador == userId);
 
                 var a = new Alarme();
                 a.IdAlarme = dto.IdAlarme;
