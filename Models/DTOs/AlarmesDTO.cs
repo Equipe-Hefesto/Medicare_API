@@ -20,5 +20,14 @@ namespace Medicare_API.Models.DTOs
         public required string Descricao { get; set; } = null!;
         public required string Status { get; set; } = null!;
     }
+    public class AlarmeComRemedioDTO
+    {
+        public  Alarme? Alarme { get; set; }
+        public string? NomeRemedio { get; set; }
 
+    }
+    public class AlarmeStatusUpdateDTO
+{
+    public required string Status { get; set; }
+}
 }

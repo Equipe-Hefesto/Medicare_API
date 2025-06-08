@@ -3,6 +3,7 @@ using System.Security.Claims;
 using Medicare_API.Data;
 using Medicare_API.Models;
 using Medicare_API.Models.DTOs;
+using Medicare_API.Models.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -46,17 +47,21 @@ namespace Medicare_API.Controllers
         {
             try
             {
+                var userId = User.GetUserId();
+                if (userId == 0) return Unauthorized();
 
-                var userString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var alarme = await (
+                                from a in _context.Alarmes
+                                join p in _context.Posologias on a.IdPosologia equals p.IdPosologia
+                                join r in _context.Remedios on p.IdRemedio equals r.IdRemedio
+                                where p.IdUtilizador == userId
+                                select new AlarmeComRemedioDTO
+                                {
+                                    Alarme = a,
+                                    NomeRemedio = r.Nome
+                                }
 
-                if (!int.TryParse(userString, out int userId))
-                {
-                    return Unauthorized();
-                }
-
-                var alarme = await _context.Alarmes.Include(p => p.Posologia)
-                .Where(p => p.Posologia.IdUtilizador == userId)
-                .ToListAsync();
+                            ).ToListAsync();
 
                 //var alarme = await _context.Alarmes.FindAsync(id);
                 if (alarme == null)
@@ -120,7 +125,7 @@ namespace Medicare_API.Controllers
 
         #region PUT
         [HttpPut("{id}")]
-       
+
         public async Task<ActionResult> PutAlarme(int id, [FromBody] AlarmeUpdateDTO dto)
         {
             try
@@ -128,12 +133,12 @@ namespace Medicare_API.Controllers
 
                 var userString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-                if(!int.TryParse(userString, out int userId))
+                if (!int.TryParse(userString, out int userId))
 
-                if (!await _context.Alarmes.AnyAsync(a => a.IdPosologia == dto.IdPosologia && a.DataHora == dto.DataHora))
-                {
-                    return BadRequest($"O Alarme da Posologia {dto.IdPosologia} das {dto.DataHora} informado já existe.");
-                }
+                    if (!await _context.Alarmes.AnyAsync(a => a.IdPosologia == dto.IdPosologia && a.DataHora == dto.DataHora))
+                    {
+                        return BadRequest($"O Alarme da Posologia {dto.IdPosologia} das {dto.DataHora} informado já existe.");
+                    }
 
                 var posologia = await _context.Posologias.FirstOrDefaultAsync(p => p.IdPosologia == dto.IdPosologia && p.IdUtilizador == userId);
 
@@ -156,6 +161,36 @@ namespace Medicare_API.Controllers
             }
         }
         #endregion
+
+        [HttpPut("status/{id}")]
+        public async Task<ActionResult> AtualizarStatusAlarme(int id, [FromBody] AlarmeStatusUpdateDTO dto)
+        {
+            try
+            {
+                var userString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (!int.TryParse(userString, out int userId))
+                    return Unauthorized();
+
+                var alarme = await _context.Alarmes
+                    .Include(a => a.Posologia)
+                    .FirstOrDefaultAsync(a => a.IdAlarme == id && a.Posologia.IdUtilizador == userId);
+
+                if (alarme == null)
+                    return NotFound();
+
+                alarme.Status = dto.Status;
+
+                _context.Alarmes.Update(alarme);
+                await _context.SaveChangesAsync();
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Erro ao atualizar status: {ex.Message}");
+            }
+        }
+
 
         #region DELETE
         [HttpDelete("{id}")]

@@ -48,4 +48,11 @@ namespace Medicare_API.Models.DTOs
         public int DiasPausa { get; set; }
     }
 
+    public class PosologiaCompletaDTO
+    {
+        public Posologia? Posologia { get; set; }
+        public string? NomeRemedio { get; set; }
+        public Alarme? Alarme { get; set; }
+
+    }
 }

@@ -3,6 +3,7 @@ using System.Xml;
 using Medicare_API.Data;
 using Medicare_API.Models;
 using Medicare_API.Models.DTOs;
+using Medicare_API.Models.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -78,10 +79,21 @@ namespace Medicare_API.Controllers
                     return Unauthorized();
                 }
 
-                var posologia = await _context.Posologias
-                .Include(p => p.Remedio)
-                .Where(p => p.IdUtilizador == userId)
-                .ToListAsync();
+
+                var posologia = await (
+                                from p in _context.Posologias
+                                join a in _context.Alarmes on p.IdPosologia equals a.IdPosologia
+                                join r in _context.Remedios on p.IdRemedio equals r.IdRemedio
+                                where p.IdUtilizador == userId
+                                group new { p, r, a } by new { p.IdPosologia, p,  Nome = r.Nome } into grp
+                                let ultimoAlarme = grp.OrderByDescending(x => x.a.DataHora).FirstOrDefault()
+                                select new PosologiaCompletaDTO
+                                {
+                                    Posologia = ultimoAlarme.p,
+                                    NomeRemedio = grp.Key.Nome,
+                                    Alarme = ultimoAlarme.a
+                                }
+).ToListAsync();
 
                 if (posologia == null)
                     return NotFound();
@@ -126,6 +138,8 @@ namespace Medicare_API.Controllers
         }
         #endregion
 
+        
+
 
         #region POST
         [HttpPost("AddPoso")]
@@ -134,7 +148,7 @@ namespace Medicare_API.Controllers
             try
             {
 
-                
+
 
                 if (await _context.Posologias
                     .AnyAsync(p => p.IdRemedio == dto.IdRemedio && p.IdUtilizador == dto.IdUtilizador && p.Quantidade == dto.Quantidade && p.IdTipoFarmaceutico == dto.IdTipoFarmaceutico))
