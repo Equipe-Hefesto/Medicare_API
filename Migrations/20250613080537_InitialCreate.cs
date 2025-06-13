@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Medicare_API.Migrations
 {
     /// <inheritdoc />
-    public partial class RecriandoBanco : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,7 +15,8 @@ namespace Medicare_API.Migrations
                 name: "FormasPagamento",
                 columns: table => new
                 {
-                    IdFormaPagamento = table.Column<int>(type: "int", nullable: false),
+                    IdFormaPagamento = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     dsFormaPagamento = table.Column<string>(type: "nvarchar(45)", maxLength: 45, nullable: false),
                     qtdeParcelas = table.Column<int>(type: "int", nullable: false),
                     qtdeMinParcelas = table.Column<int>(type: "int", nullable: false),
@@ -45,10 +46,11 @@ namespace Medicare_API.Migrations
                 name: "Remedios",
                 columns: table => new
                 {
-                    IdRemedio = table.Column<int>(type: "int", nullable: false),
-                    nmRemedio = table.Column<string>(type: "nvarchar(40)", maxLength: 40, nullable: false),
-                    dcRemedio = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    duRemedio = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    IdRemedio = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Nome = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    DataCriacao = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    DataAtualizacao = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -59,7 +61,8 @@ namespace Medicare_API.Migrations
                 name: "TiposAgendamento",
                 columns: table => new
                 {
-                    IdTipoAgendamento = table.Column<int>(type: "int", nullable: false),
+                    IdTipoAgendamento = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     Descricao = table.Column<string>(type: "nvarchar(40)", maxLength: 40, nullable: false)
                 },
                 constraints: table =>
@@ -71,7 +74,8 @@ namespace Medicare_API.Migrations
                 name: "TiposFarmaceutico",
                 columns: table => new
                 {
-                    IdTipoFarmaceutico = table.Column<int>(type: "int", nullable: false),
+                    IdTipoFarmaceutico = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     decricao = table.Column<string>(type: "nvarchar(40)", maxLength: 40, nullable: false)
                 },
                 constraints: table =>
@@ -83,7 +87,8 @@ namespace Medicare_API.Migrations
                 name: "TiposGrandeza",
                 columns: table => new
                 {
-                    IdTipoGrandeza = table.Column<int>(type: "int", nullable: false),
+                    IdTipoGrandeza = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     dsGrandeza = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false)
                 },
                 constraints: table =>
@@ -95,7 +100,8 @@ namespace Medicare_API.Migrations
                 name: "TiposParentesco",
                 columns: table => new
                 {
-                    IdTipoParentesco = table.Column<int>(type: "int", nullable: false),
+                    IdTipoParentesco = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     dsParentesco = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false)
                 },
                 constraints: table =>
@@ -107,7 +113,8 @@ namespace Medicare_API.Migrations
                 name: "TiposUtilizadores",
                 columns: table => new
                 {
-                    IdTipoUtilizador = table.Column<int>(type: "int", nullable: false),
+                    IdTipoUtilizador = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     dsTipoUtilizador = table.Column<string>(type: "nvarchar(14)", maxLength: 14, nullable: false)
                 },
                 constraints: table =>
@@ -119,7 +126,8 @@ namespace Medicare_API.Migrations
                 name: "Utilizadores",
                 columns: table => new
                 {
-                    IdUtilizador = table.Column<int>(type: "int", nullable: false),
+                    IdUtilizador = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     nmUtilizador = table.Column<string>(type: "nvarchar(40)", maxLength: 40, nullable: false),
                     sbUtilizador = table.Column<string>(type: "nvarchar(40)", maxLength: 40, nullable: false),
                     cpfUtilizador = table.Column<string>(type: "nchar(11)", fixedLength: true, maxLength: 11, nullable: false),
@@ -128,7 +136,9 @@ namespace Medicare_API.Migrations
                     telUtilizador = table.Column<string>(type: "nchar(11)", fixedLength: true, maxLength: 11, nullable: false),
                     senhaHash = table.Column<byte[]>(type: "varbinary(64)", maxLength: 64, nullable: false),
                     senhaSalt = table.Column<byte[]>(type: "varbinary(128)", maxLength: 128, nullable: false),
-                    userUtilizador = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false)
+                    userUtilizador = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
+                    senhaResetToken = table.Column<string>(type: "NVARCHAR(255)", nullable: true),
+                    senhaResetTokenExpiration = table.Column<DateTime>(type: "datetime", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -204,17 +214,19 @@ namespace Medicare_API.Migrations
                 name: "Posologias",
                 columns: table => new
                 {
-                    IdPosologia = table.Column<int>(type: "int", nullable: false),
-                    IdRemedio = table.Column<int>(type: "int", nullable: false),
+                    IdPosologia = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     IdUtilizador = table.Column<int>(type: "int", nullable: false),
-                    IdTipoFarmaceutico = table.Column<int>(type: "int", nullable: false),
-                    IdTipoGrandeza = table.Column<int>(type: "int", nullable: false),
-                    IdTipoAgendamento = table.Column<int>(type: "int", nullable: false),
-                    qtdePosologia = table.Column<int>(type: "int", nullable: false),
+                    IdRemedio = table.Column<int>(type: "int", nullable: false),
                     qtdeDose = table.Column<int>(type: "int", nullable: false),
-                    diPosologia = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    dfPosologia = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    intervalo = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IdTipoFarmaceutico = table.Column<int>(type: "int", nullable: false),
+                    qtdeConcentracao = table.Column<int>(type: "int", nullable: false),
+                    IdTipoGrandeza = table.Column<int>(type: "int", nullable: false),
+                    observacao = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    IdTipoAgendamento = table.Column<int>(type: "int", nullable: false),
+                    dtInicio = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    dtFim = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    intervalo = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
                     diasSemana = table.Column<string>(type: "nvarchar(16)", maxLength: 16, nullable: false),
                     diasUso = table.Column<int>(type: "int", nullable: false),
                     diasPausa = table.Column<int>(type: "int", nullable: false),
@@ -228,31 +240,31 @@ namespace Medicare_API.Migrations
                         column: x => x.IdRemedio,
                         principalTable: "Remedios",
                         principalColumn: "IdRemedio",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Posologias_TiposAgendamento_IdTipoAgendamento",
                         column: x => x.IdTipoAgendamento,
                         principalTable: "TiposAgendamento",
                         principalColumn: "IdTipoAgendamento",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Posologias_TiposFarmaceutico_IdTipoFarmaceutico",
                         column: x => x.IdTipoFarmaceutico,
                         principalTable: "TiposFarmaceutico",
                         principalColumn: "IdTipoFarmaceutico",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Posologias_TiposGrandeza_IdTipoGrandeza",
                         column: x => x.IdTipoGrandeza,
                         principalTable: "TiposGrandeza",
                         principalColumn: "IdTipoGrandeza",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Posologias_Utilizadores_IdUtilizador",
                         column: x => x.IdUtilizador,
                         principalTable: "Utilizadores",
                         principalColumn: "IdUtilizador",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Posologias_Utilizadores_UtilizadorIdUtilizador",
                         column: x => x.UtilizadorIdUtilizador,
@@ -264,7 +276,8 @@ namespace Medicare_API.Migrations
                 name: "Promocoes",
                 columns: table => new
                 {
-                    IdPromocao = table.Column<int>(type: "int", nullable: false),
+                    IdPromocao = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     IdFormaPagamento = table.Column<int>(type: "int", nullable: false),
                     IdUtilizador = table.Column<int>(type: "int", nullable: false),
                     IdRemedio = table.Column<int>(type: "int", nullable: false),
@@ -349,48 +362,6 @@ namespace Medicare_API.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "SolicitacoesVinculos",
-                columns: table => new
-                {
-                    IdSolicitacao = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    IdSolicitante = table.Column<int>(type: "int", nullable: false),
-                    IdTipoSolicitante = table.Column<int>(type: "int", nullable: false),
-                    IdReceptor = table.Column<int>(type: "int", nullable: false),
-                    IdTipoReceptor = table.Column<int>(type: "int", nullable: false),
-                    Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    DataSolicitacao = table.Column<DateTime>(type: "datetime2", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_SolicitacoesVinculos", x => x.IdSolicitacao);
-                    table.ForeignKey(
-                        name: "FK_SolicitacoesVinculos_TiposUtilizadores_IdTipoReceptor",
-                        column: x => x.IdTipoReceptor,
-                        principalTable: "TiposUtilizadores",
-                        principalColumn: "IdTipoUtilizador",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_SolicitacoesVinculos_TiposUtilizadores_IdTipoSolicitante",
-                        column: x => x.IdTipoSolicitante,
-                        principalTable: "TiposUtilizadores",
-                        principalColumn: "IdTipoUtilizador",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_SolicitacoesVinculos_Utilizadores_IdReceptor",
-                        column: x => x.IdReceptor,
-                        principalTable: "Utilizadores",
-                        principalColumn: "IdUtilizador",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_SolicitacoesVinculos_Utilizadores_IdSolicitante",
-                        column: x => x.IdSolicitante,
-                        principalTable: "Utilizadores",
-                        principalColumn: "IdUtilizador",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Utilizadores_TiposUtilizadores",
                 columns: table => new
                 {
@@ -418,22 +389,23 @@ namespace Medicare_API.Migrations
                 name: "Alarmes",
                 columns: table => new
                 {
-                    IdAlarme = table.Column<int>(type: "int", nullable: false),
+                    IdAlarme = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     IdPosologia = table.Column<int>(type: "int", nullable: false),
-                    dtHoraAlarme = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    dsAlarme = table.Column<string>(type: "nvarchar(40)", maxLength: 40, nullable: false),
-                    stAlarme = table.Column<string>(type: "nvarchar(1)", maxLength: 1, nullable: false),
+                    dtHoraAlarme = table.Column<DateTime>(type: "datetime", nullable: false),
+                    stAlarme = table.Column<string>(type: "char(1)", maxLength: 1, nullable: false, defaultValue: "P"),
+                    ContadorSoneca = table.Column<string>(type: "char(1)", nullable: false, defaultValue: "0"),
                     PosologiaIdPosologia = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Alarmes", x => x.IdAlarme);
                     table.ForeignKey(
-                        name: "FK_Alarmes_Posologias_IdPosologia",
+                        name: "FK_Alarmes_Posologia",
                         column: x => x.IdPosologia,
                         principalTable: "Posologias",
                         principalColumn: "IdPosologia",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Alarmes_Posologias_PosologiaIdPosologia",
                         column: x => x.PosologiaIdPosologia,
@@ -457,6 +429,70 @@ namespace Medicare_API.Migrations
                         principalTable: "Posologias",
                         principalColumn: "IdPosologia",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Sonecas",
+                columns: table => new
+                {
+                    IdPosologia = table.Column<int>(type: "int", nullable: false),
+                    stSoneca = table.Column<string>(type: "char(1)", nullable: false, defaultValue: "A"),
+                    intervaloMinutos = table.Column<int>(type: "int", nullable: false, defaultValue: 5),
+                    maxSoneca = table.Column<int>(type: "int", nullable: false, defaultValue: 3),
+                    dcSoneca = table.Column<DateTime>(type: "datetime", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    duSoneca = table.Column<DateTime>(type: "datetime", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Sonecas", x => x.IdPosologia);
+                    table.ForeignKey(
+                        name: "FK_Sonecas_2",
+                        column: x => x.IdPosologia,
+                        principalTable: "Posologias",
+                        principalColumn: "IdPosologia",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Solicitacoes",
+                columns: table => new
+                {
+                    IdSolicitacao = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    IdSolicitante = table.Column<int>(type: "int", nullable: false),
+                    IdTipoSolicitante = table.Column<int>(type: "int", nullable: false),
+                    IdReceptor = table.Column<int>(type: "int", nullable: false),
+                    IdTipoReceptor = table.Column<int>(type: "int", nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    DataSolicitacao = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Solicitacoes", x => x.IdSolicitacao);
+                    table.ForeignKey(
+                        name: "FK_Solicitacoes_Utilizadores_IdReceptor",
+                        column: x => x.IdReceptor,
+                        principalTable: "Utilizadores",
+                        principalColumn: "IdUtilizador",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Solicitacoes_Utilizadores_IdSolicitante",
+                        column: x => x.IdSolicitante,
+                        principalTable: "Utilizadores",
+                        principalColumn: "IdUtilizador",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Solicitacoes_Utilizadores_TiposUtilizadores_IdReceptor_IdTipoReceptor",
+                        columns: x => new { x.IdReceptor, x.IdTipoReceptor },
+                        principalTable: "Utilizadores_TiposUtilizadores",
+                        principalColumns: new[] { "IdUtilizador", "IdTipoUtilizador" },
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Solicitacoes_Utilizadores_TiposUtilizadores_IdSolicitante_IdTipoSolicitante",
+                        columns: x => new { x.IdSolicitante, x.IdTipoSolicitante },
+                        principalTable: "Utilizadores_TiposUtilizadores",
+                        principalColumns: new[] { "IdUtilizador", "IdTipoUtilizador" },
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
@@ -566,24 +602,14 @@ namespace Medicare_API.Migrations
                 column: "UtilizadorIdUtilizador");
 
             migrationBuilder.CreateIndex(
-                name: "IX_SolicitacoesVinculos_IdReceptor",
-                table: "SolicitacoesVinculos",
-                column: "IdReceptor");
+                name: "IX_Solicitacoes_IdReceptor_IdTipoReceptor",
+                table: "Solicitacoes",
+                columns: new[] { "IdReceptor", "IdTipoReceptor" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_SolicitacoesVinculos_IdSolicitante",
-                table: "SolicitacoesVinculos",
-                column: "IdSolicitante");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_SolicitacoesVinculos_IdTipoReceptor",
-                table: "SolicitacoesVinculos",
-                column: "IdTipoReceptor");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_SolicitacoesVinculos_IdTipoSolicitante",
-                table: "SolicitacoesVinculos",
-                column: "IdTipoSolicitante");
+                name: "IX_Solicitacoes_IdSolicitante_IdTipoSolicitante",
+                table: "Solicitacoes",
+                columns: new[] { "IdSolicitante", "IdTipoSolicitante" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Utilizadores_cpfUtilizador",
@@ -625,13 +651,10 @@ namespace Medicare_API.Migrations
                 name: "Responsaveis");
 
             migrationBuilder.DropTable(
-                name: "SolicitacoesVinculos");
+                name: "Solicitacoes");
 
             migrationBuilder.DropTable(
-                name: "Utilizadores_TiposUtilizadores");
-
-            migrationBuilder.DropTable(
-                name: "Posologias");
+                name: "Sonecas");
 
             migrationBuilder.DropTable(
                 name: "Parceiros");
@@ -641,6 +664,12 @@ namespace Medicare_API.Migrations
 
             migrationBuilder.DropTable(
                 name: "TiposParentesco");
+
+            migrationBuilder.DropTable(
+                name: "Utilizadores_TiposUtilizadores");
+
+            migrationBuilder.DropTable(
+                name: "Posologias");
 
             migrationBuilder.DropTable(
                 name: "TiposUtilizadores");

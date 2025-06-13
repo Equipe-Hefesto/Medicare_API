@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Medicare_API.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20250612152929_InitialIdentitySchema")]
-    partial class InitialIdentitySchema
+    [Migration("20250613080537_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -28,23 +28,21 @@ namespace Medicare_API.Migrations
             modelBuilder.Entity("Medicare_API.Models.Alarme", b =>
                 {
                     b.Property<int>("IdAlarme")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<int>("ContadorSoneca")
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdAlarme"));
+
+                    b.Property<string>("ContadorSoneca")
+                        .IsRequired()
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0)
+                        .HasColumnType("char(1)")
+                        .HasDefaultValue("0")
                         .HasColumnName("ContadorSoneca");
 
                     b.Property<DateTime>("DataHora")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("datetime")
                         .HasColumnName("dtHoraAlarme");
-
-                    b.Property<string>("Descricao")
-                        .IsRequired()
-                        .HasMaxLength(40)
-                        .HasColumnType("nvarchar(40)")
-                        .HasColumnName("dsAlarme");
 
                     b.Property<int>("IdPosologia")
                         .HasColumnType("int");
@@ -54,8 +52,10 @@ namespace Medicare_API.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasMaxLength(1)
-                        .HasColumnType("nvarchar(1)")
+                        .HasColumnType("char(1)")
+                        .HasDefaultValue("P")
                         .HasColumnName("stAlarme");
 
                     b.HasKey("IdAlarme");
@@ -112,7 +112,10 @@ namespace Medicare_API.Migrations
             modelBuilder.Entity("Medicare_API.Models.FormaPagamento", b =>
                 {
                     b.Property<int>("IdFormaPagamento")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdFormaPagamento"));
 
                     b.Property<string>("Descricao")
                         .IsRequired()
@@ -211,15 +214,18 @@ namespace Medicare_API.Migrations
             modelBuilder.Entity("Medicare_API.Models.Posologia", b =>
                 {
                     b.Property<int>("IdPosologia")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdPosologia"));
 
                     b.Property<DateTime>("DataFim")
                         .HasColumnType("datetime2")
-                        .HasColumnName("dfPosologia");
+                        .HasColumnName("dtFim");
 
                     b.Property<DateTime>("DataInicio")
                         .HasColumnType("datetime2")
-                        .HasColumnName("diPosologia");
+                        .HasColumnName("dtInicio");
 
                     b.Property<int>("DiasPausa")
                         .HasColumnType("int")
@@ -251,15 +257,20 @@ namespace Medicare_API.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Intervalo")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
                         .HasColumnName("intervalo");
 
-                    b.Property<int>("Quantidade")
-                        .HasColumnType("int")
-                        .HasColumnName("qtdePosologia");
+                    b.Property<string>("Observacao")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("observacao");
 
-                    b.Property<int>("QuantidadeDose")
+                    b.Property<int>("QtdeConcentracao")
+                        .HasColumnType("int")
+                        .HasColumnName("qtdeConcentracao");
+
+                    b.Property<int>("QtdeDose")
                         .HasColumnType("int")
                         .HasColumnName("qtdeDose");
 
@@ -286,7 +297,10 @@ namespace Medicare_API.Migrations
             modelBuilder.Entity("Medicare_API.Models.Promocao", b =>
                 {
                     b.Property<int>("IdPromocao")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdPromocao"));
 
                     b.Property<DateTime>("DataFim")
                         .HasColumnType("datetime2")
@@ -339,21 +353,21 @@ namespace Medicare_API.Migrations
             modelBuilder.Entity("Medicare_API.Models.Remedio", b =>
                 {
                     b.Property<int>("IdRemedio")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdRemedio"));
+
                     b.Property<DateTime>("DataAtualizacao")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("duRemedio");
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime>("DataCriacao")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("dcRemedio");
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Nome")
                         .IsRequired()
-                        .HasMaxLength(40)
-                        .HasColumnType("nvarchar(40)")
-                        .HasColumnName("nmRemedio");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("IdRemedio");
 
@@ -432,7 +446,7 @@ namespace Medicare_API.Migrations
 
                     b.HasIndex("IdSolicitante", "IdTipoSolicitante");
 
-                    b.ToTable("SolicitacoesVinculos", (string)null);
+                    b.ToTable("Solicitacoes", (string)null);
                 });
 
             modelBuilder.Entity("Medicare_API.Models.Soneca", b =>
@@ -479,7 +493,10 @@ namespace Medicare_API.Migrations
             modelBuilder.Entity("Medicare_API.Models.TipoAgendamento", b =>
                 {
                     b.Property<int>("IdTipoAgendamento")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdTipoAgendamento"));
 
                     b.Property<string>("Descricao")
                         .IsRequired()
@@ -494,7 +511,10 @@ namespace Medicare_API.Migrations
             modelBuilder.Entity("Medicare_API.Models.TipoFarmaceutico", b =>
                 {
                     b.Property<int>("IdTipoFarmaceutico")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdTipoFarmaceutico"));
 
                     b.Property<string>("Descricao")
                         .IsRequired()
@@ -510,7 +530,10 @@ namespace Medicare_API.Migrations
             modelBuilder.Entity("Medicare_API.Models.TipoGrandeza", b =>
                 {
                     b.Property<int>("IdTipoGrandeza")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdTipoGrandeza"));
 
                     b.Property<string>("Descricao")
                         .IsRequired()
@@ -526,7 +549,10 @@ namespace Medicare_API.Migrations
             modelBuilder.Entity("Medicare_API.Models.TipoParentesco", b =>
                 {
                     b.Property<int>("IdTipoParentesco")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdTipoParentesco"));
 
                     b.Property<string>("Descricao")
                         .IsRequired()
@@ -542,7 +568,10 @@ namespace Medicare_API.Migrations
             modelBuilder.Entity("Medicare_API.Models.TipoUtilizador", b =>
                 {
                     b.Property<int>("IdTipoUtilizador")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdTipoUtilizador"));
 
                     b.Property<string>("Descricao")
                         .IsRequired()
@@ -558,10 +587,10 @@ namespace Medicare_API.Migrations
             modelBuilder.Entity("Medicare_API.Models.Utilizador", b =>
                 {
                     b.Property<int>("IdUtilizador")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<int>("AccessFailedCount")
-                        .HasColumnType("int");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdUtilizador"));
 
                     b.Property<string>("CPF")
                         .IsRequired()
@@ -569,10 +598,6 @@ namespace Medicare_API.Migrations
                         .HasColumnType("nchar(11)")
                         .HasColumnName("cpfUtilizador")
                         .IsFixedLength();
-
-                    b.Property<string>("ConcurrencyStamp")
-                        .IsConcurrencyToken()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("DtNascimento")
                         .HasColumnType("datetime2");
@@ -583,43 +608,19 @@ namespace Medicare_API.Migrations
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("emUtilizador");
 
-                    b.Property<bool>("EmailConfirmed")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("Id")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("LockoutEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTimeOffset?>("LockoutEnd")
-                        .HasColumnType("datetimeoffset");
-
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasMaxLength(40)
                         .HasColumnType("nvarchar(40)")
                         .HasColumnName("nmUtilizador");
 
-                    b.Property<string>("NormalizedEmail")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
+                    b.Property<string>("PasswordResetToken")
+                        .HasColumnType("NVARCHAR(255)")
+                        .HasColumnName("senhaResetToken");
 
-                    b.Property<string>("NormalizedUserName")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("PasswordHash")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PhoneNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("PhoneNumberConfirmed")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("SecurityStamp")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<DateTime?>("PasswordResetTokenExpiration")
+                        .HasColumnType("datetime")
+                        .HasColumnName("senhaResetTokenExpiration");
 
                     b.Property<byte[]>("SenhaHash")
                         .IsRequired()
@@ -646,13 +647,6 @@ namespace Medicare_API.Migrations
                         .HasColumnName("telUtilizador")
                         .IsFixedLength();
 
-                    b.Property<bool>("TwoFactorEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("UserName")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -663,14 +657,6 @@ namespace Medicare_API.Migrations
 
                     b.HasIndex("CPF")
                         .IsUnique();
-
-                    b.HasIndex("NormalizedEmail")
-                        .HasDatabaseName("EmailIndex");
-
-                    b.HasIndex("NormalizedUserName")
-                        .IsUnique()
-                        .HasDatabaseName("UserNameIndex")
-                        .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.HasIndex("Username")
                         .IsUnique();
@@ -693,152 +679,18 @@ namespace Medicare_API.Migrations
                     b.ToTable("Utilizadores_TiposUtilizadores", (string)null);
                 });
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<int>", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ConcurrencyStamp")
-                        .IsConcurrencyToken()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("NormalizedName")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("NormalizedName")
-                        .IsUnique()
-                        .HasDatabaseName("RoleNameIndex")
-                        .HasFilter("[NormalizedName] IS NOT NULL");
-
-                    b.ToTable("AspNetRoles", (string)null);
-                });
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ClaimType")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ClaimValue")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("RoleId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RoleId");
-
-                    b.ToTable("AspNetRoleClaims", (string)null);
-                });
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<int>", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ClaimType")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ClaimValue")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("AspNetUserClaims", (string)null);
-                });
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<int>", b =>
-                {
-                    b.Property<string>("LoginProvider")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("ProviderKey")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("ProviderDisplayName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("LoginProvider", "ProviderKey");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("AspNetUserLogins", (string)null);
-                });
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<int>", b =>
-                {
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("RoleId")
-                        .HasColumnType("int");
-
-                    b.HasKey("UserId", "RoleId");
-
-                    b.HasIndex("RoleId");
-
-                    b.ToTable("AspNetUserRoles", (string)null);
-                });
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<int>", b =>
-                {
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("LoginProvider")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("Value")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("UserId", "LoginProvider", "Name");
-
-                    b.ToTable("AspNetUserTokens", (string)null);
-                });
-
             modelBuilder.Entity("Medicare_API.Models.Alarme", b =>
                 {
-                    b.HasOne("Medicare_API.Models.Posologia", "Posologia")
+                    b.HasOne("Medicare_API.Models.Posologia", null)
                         .WithMany()
                         .HasForeignKey("IdPosologia")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_Alarmes_Posologia");
 
                     b.HasOne("Medicare_API.Models.Posologia", null)
                         .WithMany("Alarmes")
                         .HasForeignKey("PosologiaIdPosologia");
-
-                    b.Navigation("Posologia");
                 });
 
             modelBuilder.Entity("Medicare_API.Models.Cuidador", b =>
@@ -900,49 +752,39 @@ namespace Medicare_API.Migrations
 
             modelBuilder.Entity("Medicare_API.Models.Posologia", b =>
                 {
-                    b.HasOne("Medicare_API.Models.Remedio", "Remedio")
+                    b.HasOne("Medicare_API.Models.Remedio", null)
                         .WithMany()
                         .HasForeignKey("IdRemedio")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Medicare_API.Models.TipoAgendamento", "TipoAgendamento")
+                    b.HasOne("Medicare_API.Models.TipoAgendamento", null)
                         .WithMany()
                         .HasForeignKey("IdTipoAgendamento")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Medicare_API.Models.TipoFarmaceutico", "TipoFarmaceutico")
+                    b.HasOne("Medicare_API.Models.TipoFarmaceutico", null)
                         .WithMany()
                         .HasForeignKey("IdTipoFarmaceutico")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Medicare_API.Models.TipoGrandeza", "TipoGrandeza")
+                    b.HasOne("Medicare_API.Models.TipoGrandeza", null)
                         .WithMany()
                         .HasForeignKey("IdTipoGrandeza")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Medicare_API.Models.Utilizador", "Utilizador")
+                    b.HasOne("Medicare_API.Models.Utilizador", null)
                         .WithMany()
                         .HasForeignKey("IdUtilizador")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Medicare_API.Models.Utilizador", null)
                         .WithMany("Posologias")
                         .HasForeignKey("UtilizadorIdUtilizador");
-
-                    b.Navigation("Remedio");
-
-                    b.Navigation("TipoAgendamento");
-
-                    b.Navigation("TipoFarmaceutico");
-
-                    b.Navigation("TipoGrandeza");
-
-                    b.Navigation("Utilizador");
                 });
 
             modelBuilder.Entity("Medicare_API.Models.Promocao", b =>
@@ -1075,57 +917,6 @@ namespace Medicare_API.Migrations
                     b.Navigation("TipoUtilizador");
 
                     b.Navigation("Utilizador");
-                });
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
-                {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<int>", null)
-                        .WithMany()
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<int>", b =>
-                {
-                    b.HasOne("Medicare_API.Models.Utilizador", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<int>", b =>
-                {
-                    b.HasOne("Medicare_API.Models.Utilizador", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<int>", b =>
-                {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<int>", null)
-                        .WithMany()
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Medicare_API.Models.Utilizador", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<int>", b =>
-                {
-                    b.HasOne("Medicare_API.Models.Utilizador", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("Medicare_API.Models.Parceiro", b =>

@@ -23,8 +23,8 @@ namespace Medicare_API.Models
         public byte[]? SenhaSalt { get; set; } = null!;
         public string Username { get; set; } = null!;
         [NotMapped]
-        public string Token { get; set; } = string.Empty;        public string? PasswordResetToken { get; set; }
-
+        public string Token { get; set; } = string.Empty;
+        public string? PasswordResetToken { get; set; }
         public DateTime? PasswordResetTokenExpiration { get; set; }
 
         [JsonIgnore]

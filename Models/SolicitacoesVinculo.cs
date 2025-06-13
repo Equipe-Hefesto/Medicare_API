@@ -14,13 +14,13 @@ namespace Medicare_API.Models
         public int IdSolicitante { get; set; }
         public int IdTipoSolicitante { get; set; }
         public int IdReceptor { get; set; }
-        public int IdTipoReceptor { get; set; } 
-        public string Status { get; set; }       
+        public int IdTipoReceptor { get; set; }
+        public string Status { get; set; } = "P";    
         public DateTime DataSolicitacao { get; set; }
-        public Utilizador Solicitante { get; set; }        
-        public Utilizador Receptor { get; set; }    
-        public UtilizadorTipoUtilizador TipoSolicitante { get; set; }
-        public UtilizadorTipoUtilizador TipoReceptor { get; set; }
+        public Utilizador? Solicitante { get; set; }        
+        public Utilizador? Receptor { get; set; }    
+        public UtilizadorTipoUtilizador? TipoSolicitante { get; set; }
+        public UtilizadorTipoUtilizador? TipoReceptor { get; set; }
 
     }
 }
