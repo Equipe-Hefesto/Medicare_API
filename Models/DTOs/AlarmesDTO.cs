@@ -25,6 +25,7 @@ namespace Medicare_API.Models.DTOs
     {
         public required string Frequencia { get; set; }
         public required string Concentracao { get; set; }
+        public required string Proximo { get; set; }
     }
 
     public class AlarmeStatusDTO

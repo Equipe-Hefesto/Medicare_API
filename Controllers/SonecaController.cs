@@ -113,7 +113,7 @@ namespace Medicare_API.Controllers
 
                 var soneca = await _context.Sonecas
                     .Include(s => s.Posologia)
-                    .FirstOrDefaultAsync(s => s.IdPosologia == id && s.Posologia.IdUtilizador == userId);
+                    .FirstOrDefaultAsync(s => s.IdPosologia == id && s.Posologia!.IdUtilizador == userId);
 
                 if (soneca == null) return NotFound();
 
@@ -146,7 +146,7 @@ namespace Medicare_API.Controllers
 
                 var soneca = await _context.Sonecas
                     .Include(s => s.Posologia)
-                    .FirstOrDefaultAsync(s => s.IdPosologia == id && s.Posologia.IdUtilizador == userId);
+                    .FirstOrDefaultAsync(s => s.IdPosologia == id && s.Posologia!.IdUtilizador == userId);
 
                 if (soneca == null) return NotFound();
 

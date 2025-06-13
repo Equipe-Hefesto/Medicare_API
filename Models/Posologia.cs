@@ -11,10 +11,10 @@ namespace Medicare_API.Models
         public int IdUtilizador { get; set; }
         
         public int IdRemedio { get; set; }
-        public int QtdeDose { get; set; }
-        public int IdTipoFarmaceutico { get; set; }
-        public int QtdeConcentracao { get; set; }
-        public int IdTipoGrandeza { get; set; }
+        public int QtdeDose { get; set; } = 1;
+        public int IdTipoFarmaceutico { get; set; } = 1;
+        public int QtdeConcentracao { get; set; } = 1;
+        public int IdTipoGrandeza { get; set; } = 1;
         public string? Observacao { get; set; }
 
         public int IdTipoAgendamento { get; set; }
@@ -23,7 +23,7 @@ namespace Medicare_API.Models
         public DateTime DataFim { get; set; }
 
         public string? Intervalo { get; set; }
-        public List<int> DiasSemana { get; set; } = new();
+        public List<DayOfWeek> DiasSemana { get; set; } = new();
         public int DiasUso { get; set; }
         public int DiasPausa { get; set; }
 

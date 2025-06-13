@@ -1,5 +1,7 @@
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using Medicare_API.Data;
 using Medicare_API.Models;
 using Medicare_API.Models.DTOs;
@@ -135,7 +137,8 @@ namespace Medicare_API.Controllers
                                     Concentracao = $"{p.QtdeConcentracao} {GetTipoGrandeza(p.IdTipoGrandeza)}",
                                     Observacao = $"{p.Observacao}",
                                     Soneca = s,
-                                    Frequencia = $"{GetTipoAgendamento(p.IdTipoAgendamento)} | {GetHorarios(p.IdPosologia)}"
+                                    Frequencia = $"{GetTipoAgendamento(p.IdTipoAgendamento)} | {GetHorarios(p.IdPosologia)}",
+                                    Proximo = $"{GetProximo(p.IdPosologia)}"
                                 }).ToListAsync();
 
                 if (alarme == null)
@@ -337,6 +340,35 @@ namespace Medicare_API.Controllers
                 .ToList();
 
             return horarios.Any() ? string.Join(", ", horarios) : "Horarios";
+        }
+        private async Task<string> GetProximo(int idPosologia)
+        {
+            var proximo = await _context.Alarmes
+                .Where(a => a.IdPosologia == idPosologia && a.DataHora > DateTime.Now)
+                .OrderBy(a => a.DataHora)
+                .Select(a => a.DataHora)
+                .FirstOrDefaultAsync();
+
+            if (proximo == default)
+                return "Sem alarmes futuros";
+
+            var hoje = DateTime.Today;
+            var amanha = hoje.AddDays(1);
+            var cultura = new CultureInfo("pt-BR");
+
+            if (proximo.Date == hoje)
+                return $"Hoje, {proximo:HH:mm}";
+            else if (proximo.Date == amanha)
+                return $"Amanhã, {proximo:HH:mm}";
+            else if (proximo < hoje.AddDays(7))
+            {
+                var diaSemana = cultura.DateTimeFormat.GetDayName(proximo.DayOfWeek);
+                // Capitaliza o primeiro caractere (opcional)
+                diaSemana = char.ToUpper(diaSemana[0]) + diaSemana.Substring(1);
+                return $"{diaSemana}, {proximo:HH:mm}";
+            }
+            else
+                return $"{proximo:dd/MM/yy}, {proximo:HH:mm}";
         }
         #endregion
     }

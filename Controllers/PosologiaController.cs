@@ -28,7 +28,6 @@ namespace Medicare_API.Controllers
         {
             try
             {
-
                 var posologias = await _context.Posologias.ToListAsync();
 
                 if (posologias == null || posologias.Count == 0)
@@ -43,18 +42,16 @@ namespace Medicare_API.Controllers
         }
         #endregion
 
-        #region GET {id}
-        [HttpGet("id/{id}")]
+        #region GET por Id
         [Authorize(Roles = "ADMIN")]
+        [HttpGet("{id}")]
         public async Task<ActionResult<Posologia>> GetPosologiaPorId(int id)
         {
             try
             {
                 var posologia = await _context.Posologias.FirstOrDefaultAsync(p => p.IdPosologia == id);
-
                 if (posologia == null)
                     return NotFound();
-
                 return Ok(posologia);
             }
             catch (Exception ex)
@@ -64,40 +61,26 @@ namespace Medicare_API.Controllers
         }
         #endregion
 
-        #region GET GET{IdUtilizador} 
+        #region GET por Utilizador 
         [HttpGet("utilizador")]
         public async Task<ActionResult<IEnumerable<Posologia>>> GetPosologiaPorUtilizador()
         {
             try
             {
-                //Coleta o id do Utilizador autenticado
                 var userString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-                //Converte a string para Int e comparar com o ID do utilzador Existente    
                 if (!int.TryParse(userString, out int userId))
                 {
                     return Unauthorized();
                 }
-
 
                 var posologia = await (
                                 from p in _context.Posologias
-                                join a in _context.Alarmes on p.IdPosologia equals a.IdPosologia
-                                join r in _context.Remedios on p.IdRemedio equals r.IdRemedio
                                 where p.IdUtilizador == userId
-                                group new { p, r, a } by new { p.IdPosologia, p, Nome = r.Nome } into grp
-                                let ultimoAlarme = grp.OrderByDescending(x => x.a.DataHora).FirstOrDefault()
-                                select new PosologiaCompletaDTO
-                                {
-                                    Posologia = ultimoAlarme.p,
-                                    NomeRemedio = grp.Key.Nome,
-                                    Alarme = ultimoAlarme.a
-                                }
-).ToListAsync();
+                                select p
+                                ).ToListAsync();
 
                 if (posologia == null)
                     return NotFound();
-
                 return Ok(posologia);
             }
             catch (Exception ex)
@@ -106,121 +89,43 @@ namespace Medicare_API.Controllers
             }
         }
         #endregion
-
-        #region GET GET{IdAlarme} 
-        [HttpGet("utilizadorPosologia")]
-        public async Task<ActionResult<IEnumerable<Posologia>>> GetPosologiaPorAlarme()
-        {
-            try
-            {
-                var userString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-                if (!int.TryParse(userString, out int userId))
-                {
-                    return Unauthorized();
-                }
-
-                var posologia = await _context.Posologias
-                .Include(p => p.Alarmes)
-                .Include(r => r.Remedio)
-                .Where(p => p.IdUtilizador == userId)
-                .ToListAsync();
-
-                if (posologia == null)
-                    return NotFound();
-
-                return Ok(posologia);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Erro interno: {ex.Message}");
-            }
-        }
-        #endregion
-
-
 
 
         #region POST
         [HttpPost("AddPoso")]
-        public async Task<ActionResult> PostPosologia([FromBody] PosologiaCreateDTO dto)
+        public async Task<ActionResult> PostPosologia([FromBody] PosologiaDTO dto)
         {
             try
             {
+                var userString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (!int.TryParse(userString, out int userId)) return Unauthorized();
 
-
-
-                if (await _context.Posologias
-                    .AnyAsync(p => p.IdRemedio == dto.IdRemedio && p.IdUtilizador == dto.IdUtilizador && p.Quantidade == dto.Quantidade && p.IdTipoFarmaceutico == dto.IdTipoFarmaceutico))
+                if (await ExistePosologiaIdentica(dto, userId))
                 {
-                    return BadRequest($"Já existe uma posologia para o Remédio {dto.IdRemedio} e Utilizador {dto.IdUtilizador} iniciada na data {dto.DataInicio}.");
+                    return BadRequest("Já existe uma posologia idêntica cadastrada.");
                 }
 
-                var remedio = await _context.Remedios.FirstOrDefaultAsync(r => r.IdRemedio == dto.IdRemedio);
-                var utilizador = await _context.Utilizadores.FirstOrDefaultAsync(u => u.IdUtilizador == dto.IdUtilizador);
-                var tipoFarmaceutico = await _context.TiposFarmaceutico.FirstOrDefaultAsync(f => f.IdTipoFarmaceutico == dto.IdTipoFarmaceutico);
-                var tipoGrandeza = await _context.TiposGrandeza.FirstOrDefaultAsync(g => g.IdTipoGrandeza == dto.IdTipoGrandeza);
-                var tipoAgendamento = await _context.TiposAgendamento.FirstOrDefaultAsync(a => a.IdTipoAgendamento == dto.IdTipoAgendamento);
-
-                var ultimoId = await _context.Posologias.OrderByDescending(p => p.IdPosologia).Select(p => p.IdPosologia).FirstOrDefaultAsync();
-
-                var p = new Posologia();
-
-                p.IdPosologia = ultimoId + 1;
-                p.IdRemedio = dto.IdRemedio;
-                p.IdUtilizador = dto.IdUtilizador;
-                p.IdTipoFarmaceutico = dto.IdTipoFarmaceutico;
-                p.IdTipoGrandeza = dto.IdTipoGrandeza;
-                p.IdTipoAgendamento = dto.IdTipoAgendamento;
-                p.Quantidade = dto.Quantidade;
-                p.QuantidadeDose = dto.QuantidadeDose;
-                p.DataInicio = dto.DataInicio;
-                p.DataFim = dto.DataFim;
-                p.Intervalo = dto.Intervalo!;
-                p.DiasSemana = dto.DiasSemana!;
-                p.DiasUso = dto.DiasUso;
-                p.DiasPausa = dto.DiasPausa;
-                p.Remedio = remedio!;
-                p.Utilizador = utilizador!;
-                p.TipoFarmaceutico = tipoFarmaceutico!;
-                p.TipoGrandeza = tipoGrandeza!;
-                p.TipoAgendamento = tipoAgendamento!;
-
+                var p = new Posologia
+                {
+                    IdRemedio = dto.IdRemedio,
+                    IdUtilizador = userId,
+                    IdTipoFarmaceutico = dto.IdTipoFarmaceutico,
+                    IdTipoGrandeza = dto.IdTipoGrandeza,
+                    IdTipoAgendamento = dto.IdTipoAgendamento,
+                    QtdeDose = dto.QtdeDose,
+                    QtdeConcentracao = dto.QtdeConcentracao,
+                    DataInicio = dto.DataInicio,
+                    DataFim = dto.DataFim,
+                    Intervalo = dto.Intervalo!,
+                    DiasSemana = dto.DiasSemana!,
+                    DiasUso = dto.DiasUso,
+                    DiasPausa = dto.DiasPausa
+                };
 
                 _context.Posologias.Add(p);
                 await _context.SaveChangesAsync();
 
-                var soneca = new Soneca
-                {
-                    IdPosologia = p.IdPosologia,
-                };
-
-                _context.Sonecas.Add(soneca);
-                await _context.SaveChangesAsync();
-
-
-                await PostHorarios(p, dto.Horarios);
-
-                switch (p.IdTipoAgendamento)
-                {
-                    case 1:
-                        await AgendamentoPorHora(p);
-                        break;
-                    case 2:
-                        await AgendamentoPorHora(p);
-                        break;
-                    case 3:
-                        await AgendamentoPorDiaSemana(p);
-                        break;
-                    case 4:
-                        await AgendamentoPorCiclo(p);
-                        break;
-                }
-
-
-
-                await _context.SaveChangesAsync();
-
+                await TriggerPosologia(p, dto.Horarios);
 
                 return CreatedAtAction(nameof(GetPosologiaPorId), new { id = p.IdPosologia }, p);
             }
@@ -232,114 +137,78 @@ namespace Medicare_API.Controllers
         #endregion
 
         #region PUT
-        [HttpPut("PutPosologia")]
-        public async Task<ActionResult> PutPosologia([FromBody] PosologiaUpdateDTO dto)
+        [HttpPut("{idPosologia}")]
+        public async Task<ActionResult> PutPosologia(int idPosologia, [FromBody] PosologiaDTO dto)
         {
             try
             {
-
-
-
-                // Pega o ID do usuário logado no token
                 var userString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (!int.TryParse(userString, out int userId))
                     return Unauthorized();
 
-                var idRemedio = dto.IdRemedio;
-                var dataInicio = dto.DataInicio;
-                var utilizadortes = dto.IdUtilizador;
-                var tpFar = dto.IdTipoFarmaceutico;
-
-                bool exists = await _context.Posologias.AnyAsync(pos =>
-                    pos.IdRemedio == idRemedio &&
-                    pos.IdUtilizador == userId &&
-                    pos.DataInicio == dataInicio);
-
-
-
-                // Busca a posologia pelo id
-                var p = await _context.Posologias.FirstOrDefaultAsync(p => p.IdUtilizador == userId);
+                var p = await _context.Posologias.FirstOrDefaultAsync(p => p.IdPosologia == idPosologia && p.IdUtilizador == userId);
                 if (p == null)
-                    return NotFound($"Nenhuma posologia encontrada para o usuário com ID {userId}.");
+                    return NotFound($"Nenhuma posologia encontrada com ID {idPosologia} para o usuário atual.");
 
-                // Valida se existe posologia para remédio, usuário e data inicio
-                if (!await _context.Posologias
-                    .AnyAsync(pos => pos.IdRemedio == dto.IdRemedio && pos.IdUtilizador == userId && pos.DataInicio == dto.DataInicio))
+                // Verifica se já existe uma posologia idêntica com os dados atualizados (excluindo a própria posologia atual)
+                if (await ExistePosologiaIdentica(dto, userId))
                 {
-                    return BadRequest($"Não existe uma posologia para o Remédio {dto.IdRemedio} e Utilizador {userId} iniciada na data {dto.DataInicio}.");
+                    return BadRequest("Já existe uma posologia idêntica cadastrada.");
                 }
 
-                // Atualiza os dados da posologia
-                var remedio = await _context.Remedios.FirstOrDefaultAsync(r => r.IdRemedio == dto.IdRemedio);
-                var utilizador = await _context.Utilizadores.FirstOrDefaultAsync(u => u.IdUtilizador == userId);
-                var tipoFarmaceutico = await _context.TiposFarmaceutico.FirstOrDefaultAsync(f => f.IdTipoFarmaceutico == dto.IdTipoFarmaceutico);
-                var tipoGrandeza = await _context.TiposGrandeza.FirstOrDefaultAsync(g => g.IdTipoGrandeza == dto.IdTipoGrandeza);
-                var tipoAgendamento = await _context.TiposAgendamento.FirstOrDefaultAsync(a => a.IdTipoAgendamento == dto.IdTipoAgendamento);
+                // Atualiza somente os campos que vieram preenchidos no DTO
+                if (dto.IdRemedio != default && dto.IdRemedio != p.IdRemedio)
+                    p.IdRemedio = dto.IdRemedio;
 
-                if (p.IdUtilizador != userId)
-                {
-                    return Forbid("Você não pode alterar dados de outro usuário");
-                }
+                if (dto.QtdeDose != default && dto.QtdeDose != p.QtdeDose)
+                    p.QtdeDose = dto.QtdeDose;
 
-                p.IdRemedio = dto.IdRemedio;
-                p.IdUtilizador = userId;
-                p.IdTipoFarmaceutico = dto.IdTipoFarmaceutico;
-                p.IdTipoGrandeza = dto.IdTipoGrandeza;
-                p.IdTipoAgendamento = dto.IdTipoAgendamento;
-                p.Quantidade = dto.Quantidade;
-                p.QuantidadeDose = dto.QuantidadeDose;
-                p.DataInicio = dto.DataInicio;
-                p.DataFim = dto.DataFim;
-                p.Intervalo = dto.Intervalo!;
-                p.DiasSemana = dto.DiasSemana;
-                p.DiasUso = dto.DiasUso;
-                p.DiasPausa = dto.DiasPausa;
-                p.Remedio = remedio!;
-                p.Utilizador = utilizador!;
-                p.TipoFarmaceutico = tipoFarmaceutico!;
-                p.TipoGrandeza = tipoGrandeza!;
-                p.TipoAgendamento = tipoAgendamento!;
+                if (dto.IdTipoFarmaceutico != default && dto.IdTipoFarmaceutico != p.IdTipoFarmaceutico)
+                    p.IdTipoFarmaceutico = dto.IdTipoFarmaceutico;
 
-                if (idRemedio == null)
-                    return BadRequest("Remédio não encontrado.");
+                if (dto.QtdeConcentracao != default && dto.QtdeConcentracao != p.QtdeConcentracao)
+                    p.QtdeConcentracao = dto.QtdeConcentracao;
 
-                if (utilizadortes == null)
-                    return BadRequest("Utilizador não encontrado.");
+                if (dto.IdTipoGrandeza != default && dto.IdTipoGrandeza != p.IdTipoGrandeza)
+                    p.IdTipoGrandeza = dto.IdTipoGrandeza;
 
-                if (tpFar == null)
-                    return BadRequest("Tipo Farmacêutico não encontrado.");
+                if (dto.IdTipoAgendamento != default && dto.IdTipoAgendamento != p.IdTipoAgendamento)
+                    p.IdTipoAgendamento = dto.IdTipoAgendamento;
 
+                if (dto.DataInicio != default && dto.DataInicio != p.DataInicio)
+                    p.DataInicio = dto.DataInicio;
 
+                if (dto.DataFim != default && dto.DataFim != p.DataFim)
+                    p.DataFim = dto.DataFim;
+
+                if (!string.IsNullOrEmpty(dto.Intervalo) && dto.Intervalo != p.Intervalo)
+                    p.Intervalo = dto.Intervalo;
+
+                if (dto.DiasSemana != null && dto.DiasSemana.Any() && !dto.DiasSemana.SequenceEqual(p.DiasSemana))
+                    p.DiasSemana = dto.DiasSemana;
+
+                if (dto.DiasUso != default && dto.DiasUso != p.DiasUso)
+                    p.DiasUso = dto.DiasUso;
+
+                if (dto.DiasPausa != default && dto.DiasPausa != p.DiasPausa)
+                    p.DiasPausa = dto.DiasPausa;
+
+                // Aqui pode incluir atualização para outras propriedades opcionais como observações, se existirem no DTO
+
+                // Atualiza a posologia no banco
                 _context.Posologias.Update(p);
                 await _context.SaveChangesAsync();
 
                 // Remove horários e alarmes antigos
-                var horarios = _context.Horarios.Where(h => h.IdPosologia == p.IdPosologia).ToList();
-                var alarmes = _context.Alarmes.Where(a => a.IdPosologia == p.IdPosologia).ToList();
+                var horarios = await _context.Horarios.Where(h => h.IdPosologia == p.IdPosologia).ToListAsync();
+                var alarmes = await _context.Alarmes.Where(a => a.IdPosologia == p.IdPosologia && a.DataHora > DateTime.Now).ToListAsync();
 
                 _context.Horarios.RemoveRange(horarios);
                 _context.Alarmes.RemoveRange(alarmes);
                 await _context.SaveChangesAsync();
 
-                // Cria novos horários com base no DTO
-                await PostHorarios(p, dto.Horarios);
-
-                // Dispara agendamento baseado no tipo
-                switch (p.IdTipoAgendamento)
-                {
-                    case 1:
-                        await AgendamentoPorHora(p);
-                        break;
-                    case 2:
-                        await AgendamentoPorHora(p);
-                        break;
-                    case 3:
-                        await AgendamentoPorDiaSemana(p);
-                        break;
-                    case 4:
-                        await AgendamentoPorCiclo(p);
-                        break;
-                }
+                // Dispara o trigger para recriar os horários e alarmes com base na nova configuração
+                await TriggerPosologia(p, dto.Horarios);
 
                 return Ok();
             }
@@ -349,6 +218,8 @@ namespace Medicare_API.Controllers
             }
         }
         #endregion
+
+
 
         #region DELETE
         [HttpDelete("{id}")]
@@ -372,77 +243,74 @@ namespace Medicare_API.Controllers
             }
         }
         #endregion
-        #region Adicionais
-
-        // Método privado para obter o nome do remédio
-        private string GetNomeRemedio(int idRemedio)
-        {
-            return _context.Remedios.Find(idRemedio)?.Nome ?? "Medicamento";
-        }
-        private string GetTipoFarmaceutico(int IdTipoFarmaceutico)
-        {
-            return _context.TiposFarmaceutico.Find(IdTipoFarmaceutico)?.Descricao ?? "Tipo Farmaceutico";
-        }
-        private string GetTipoGrandeza(int IdTipoGrandeza)
-        {
-            return _context.TiposGrandeza.Find(IdTipoGrandeza)?.Descricao ?? "Tipo Gradeza";
-        }
 
 
+        #region POST Horarios
         private async Task PostHorarios(Posologia p, List<string> lista)
         {
-            List<string> horarios = new List<string>();
+            List<string> horarios = new();
 
             if (lista == null || p.IdTipoAgendamento == 2)
             {
-                DateTime dtAtual = p.DataInicio;
-                var intervaloHoras = TimeSpan.FromHours(int.Parse(p.Intervalo));
+                if (!int.TryParse(p.Intervalo, out int horas) || horas <= 0)
+                    throw new ArgumentException("Intervalo inválido.");
 
-                while (dtAtual <= p.DataInicio.AddHours(24))
+                DateTime dtAtual = p.DataInicio.Date;
+                var intervaloHoras = TimeSpan.FromHours(horas);
+
+                while (dtAtual < p.DataInicio.Date.AddDays(1))
                 {
-                    horarios.Add(TimeOnly.FromDateTime(dtAtual).ToString());
+                    horarios.Add(TimeOnly.FromDateTime(dtAtual).ToString("HH:mm"));
                     dtAtual = dtAtual.Add(intervaloHoras);
                 }
             }
-            else horarios = lista;
-
-            // Associa os horários à posologia
-            foreach (var horario in horarios)
+            else
             {
-                var hora = TimeOnly.Parse(horario);
+                horarios = lista;
+            }
 
-                bool jaExiste = await _context.Horarios.AnyAsync(h => h.IdPosologia == p.IdPosologia && h.Hora == hora);
+            // Normaliza os horários (evita erro de cultura ou formatação)
+            var horariosConvertidos = horarios
+                .Select(h => TimeOnly.Parse(h.Trim()))
+                .Distinct();
 
-                if (!jaExiste)
+            var existentes = await _context.Horarios
+                .Where(h => h.IdPosologia == p.IdPosologia)
+                .Select(h => h.Hora)
+                .ToListAsync();
+
+            var novosHorarios = horariosConvertidos
+                .Where(h => !existentes.Contains(h))
+                .Select(h => new Horario
                 {
-                    var h = new Horario();
-                    h.Hora = TimeOnly.Parse(horario);
-                    h.IdPosologia = p.IdPosologia;
-                    h.Posologia = p;
+                    Hora = h,
+                    IdPosologia = p.IdPosologia,
+                })
+                .ToList();
 
-                    _context.Horarios.Add(h);
-                    await _context.SaveChangesAsync();
-                }
+            if (novosHorarios.Any())
+            {
+                _context.Horarios.AddRange(novosHorarios);
+                await _context.SaveChangesAsync();
             }
         }
+        #endregion
 
+        #region POST Alarme
         private async Task PostAlarme(Posologia p, DateTime dtHora)
         {
-            var ultimoId = await _context.Alarmes.OrderByDescending(x => x.IdAlarme).Select(x => x.IdAlarme).FirstOrDefaultAsync();
-
-            var a = new Alarme();
-            a.IdAlarme = ultimoId + 1;
-            a.IdPosologia = p.IdPosologia;
-            a.Descricao = $"Tomar {p.Quantidade} {GetTipoFarmaceutico(p.IdTipoFarmaceutico)} de {p.QuantidadeDose} {GetTipoGrandeza(p.IdTipoGrandeza)} de {GetNomeRemedio(p.IdRemedio)}";
-            a.DataHora = dtHora;
-            a.Status = "P";
-            a.Posologia = p;
+            var a = new Alarme
+            {
+                IdPosologia = p.IdPosologia,
+                DataHora = dtHora,
+            };
 
             _context.Alarmes.Add(a);
             await _context.SaveChangesAsync();
 
         }
         #endregion
+
         #region Criação agendamentos
         private async Task AgendamentoPorHora(Posologia p)
         {
@@ -466,52 +334,17 @@ namespace Medicare_API.Controllers
 
         private async Task AgendamentoPorDiaSemana(Posologia p)
         {
-            var horarios = await _context.Horarios.Where(h => h.IdPosologia == p.IdPosologia).ToListAsync();
+            var horarios = await _context.Horarios
+                .Where(h => h.IdPosologia == p.IdPosologia)
+                .ToListAsync();
+
             DateTime dataAtual = p.DataInicio;
             DateTime dataFim = p.DataFim != default ? p.DataFim : DateTime.Now.AddMonths(1);
 
             while (dataAtual <= dataFim)
             {
-                var diaAtual = dataAtual.DayOfWeek;
-
-                // Converte o valor numérico de DayOfWeek para o nome do dia da semana em português
-                string diaAtualNome = diaAtual switch
-                {
-                    DayOfWeek.Sunday => "Domingo",
-                    DayOfWeek.Monday => "Segunda",
-                    DayOfWeek.Tuesday => "Terça",
-                    DayOfWeek.Wednesday => "Quarta",
-                    DayOfWeek.Thursday => "Quinta",
-                    DayOfWeek.Friday => "Sexta",
-                    DayOfWeek.Saturday => "Sábado",
-                    _ => throw new InvalidOperationException("Dia inválido")
-                };
-
-                if (p.DiasSemana.Contains(diaAtualNome))
-                {
-                    foreach (var horario in horarios)
-                    {
-                        var dataHora = dataAtual.Date.Add(horario.Hora.ToTimeSpan());  // Atribui a hora do alarme
-                        if (dataHora > p.DataFim)
-                            continue;
-                        await PostAlarme(p, dataHora);
-                    }
-                    dataAtual = dataAtual.AddDays(1);
-                }
-                else dataAtual = dataAtual.AddDays(1);
-            }
-        }
-
-        private async Task AgendamentoPorCiclo(Posologia p)
-        {
-            var horarios = await _context.Horarios.Where(h => h.IdPosologia == p.IdPosologia).ToListAsync();
-            DateTime dataAtual = p.DataInicio;
-            DateTime dataFim = p.DataFim != default ? p.DataFim : DateTime.Now.AddMonths(1);
-
-            while (dataAtual <= dataFim)
-            {
-                int numeroDia = (int)dataAtual.DayOfWeek;
-                for (int i = 0; i < p.DiasUso; i++)
+                DayOfWeek diaAtual = dataAtual.DayOfWeek;
+                if (p.DiasSemana.Contains(diaAtual))
                 {
                     foreach (var horario in horarios)
                     {
@@ -520,12 +353,108 @@ namespace Medicare_API.Controllers
                             continue;
                         await PostAlarme(p, dataHora);
                     }
-                    dataAtual = dataAtual.AddDays(1);
                 }
-                for (int i = 0; i < p.DiasPausa; i++) dataAtual = dataAtual.AddDays(1);
+
+                dataAtual = dataAtual.AddDays(1);
             }
         }
 
+        private async Task AgendamentoPorCiclo(Posologia p)
+        {
+            var horarios = await _context.Horarios
+                .Where(h => h.IdPosologia == p.IdPosologia)
+                .ToListAsync();
+
+            DateTime dataAtual = p.DataInicio;
+            DateTime dataFim = p.DataFim != default ? p.DataFim : DateTime.Now.AddMonths(1);
+
+            while (dataAtual <= dataFim)
+            {
+                // Dias de uso
+                for (int i = 0; i < p.DiasUso && dataAtual <= dataFim; i++)
+                {
+                    foreach (var horario in horarios)
+                    {
+                        var dataHora = dataAtual.Date.Add(horario.Hora.ToTimeSpan());
+
+                        if (dataHora > p.DataFim) continue;
+
+                        await PostAlarme(p, dataHora);
+                    }
+
+                    dataAtual = dataAtual.AddDays(1);
+                }
+
+                // Dias de pausa (sem alarmes)
+                for (int i = 0; i < p.DiasPausa && dataAtual <= dataFim; i++)
+                {
+                    dataAtual = dataAtual.AddDays(1);
+                }
+            }
+        }
+        #endregion
+
+        #region Adicionais
+        private async Task<bool> ExistePosologiaIdentica(PosologiaDTO dto, int userId)
+        {
+            var existe = await _context.Posologias
+                .Where(p =>
+                    p.IdRemedio == dto.IdRemedio &&
+                    p.IdUtilizador == userId &&
+                    p.QtdeDose == dto.QtdeDose &&
+                    p.QtdeConcentracao == dto.QtdeConcentracao &&
+                    p.IdTipoFarmaceutico == dto.IdTipoFarmaceutico &&
+                    p.IdTipoGrandeza == dto.IdTipoGrandeza &&
+                    p.IdTipoAgendamento == dto.IdTipoAgendamento &&
+                    p.DataInicio.Date == dto.DataInicio.Date &&
+                    p.DataFim.Date == dto.DataFim.Date &&
+                    p.Intervalo == dto.Intervalo &&
+                    p.DiasUso == dto.DiasUso &&
+                    p.DiasPausa == dto.DiasPausa
+                )
+                .Include(p => p.Horarios)
+                .Include(p => p.DiasSemana)
+                .FirstOrDefaultAsync();
+
+            if (existe == null)
+                return false;
+
+            // Verifica se os horários e dias são idênticos
+            var horariosDb = existe.Horarios.Select(h => h.Hora.ToString("HH:mm")).OrderBy(h => h);
+            var horariosDto = dto.Horarios.OrderBy(h => h);
+
+            var diasDb = existe.DiasSemana.OrderBy(d => d);
+            var diasDto = dto.DiasSemana.OrderBy(d => d);
+
+            return horariosDb.SequenceEqual(horariosDto) && diasDb.SequenceEqual(diasDto);
+        }
+
+        private async Task TriggerPosologia(Posologia p, List<string> horarios)
+        {
+            var soneca = new Soneca
+            {
+                IdPosologia = p.IdPosologia,
+            };
+
+            _context.Sonecas.Add(soneca);
+            await _context.SaveChangesAsync();
+
+            await PostHorarios(p, horarios);
+
+            switch (p.IdTipoAgendamento)
+            {
+                case 1:
+                case 2:
+                    await AgendamentoPorHora(p);
+                    break;
+                case 3:
+                    await AgendamentoPorDiaSemana(p);
+                    break;
+                case 4:
+                    await AgendamentoPorCiclo(p);
+                    break;
+            }
+        }
         #endregion
     }
 }
