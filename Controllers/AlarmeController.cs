@@ -79,7 +79,7 @@ namespace Medicare_API.Controllers
         #endregion
 
         #region GET lista-agendar
-        [HttpGet("lista-agendar")]
+        [HttpGet("  ")]
         public async Task<ActionResult<IEnumerable<Alarme>>> GetListaAgendarAlarme()
         {
             try
@@ -259,7 +259,7 @@ namespace Medicare_API.Controllers
         #endregion
 
         #region PUT contador
-        [HttpPut("contador/{id}")]
+        [HttpPut("  {id}")]
         public async Task<ActionResult> AtualizarContadorAlarme(int id, [FromBody] AlarmeContadorDTO dto)
         {
             try

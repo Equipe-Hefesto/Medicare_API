@@ -54,7 +54,8 @@ builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
 // 7. Pipeline HTTP
-if (app.Environment.IsDevelopment())
+
+if (app.Environment.IsDevelopment() || true) // coloca true temporariamente
 {
     app.UseSwagger();
     app.UseSwaggerUI();

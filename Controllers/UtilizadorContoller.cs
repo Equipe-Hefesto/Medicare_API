@@ -161,97 +161,60 @@ namespace Medicare_API.Controllers
 
         #region POST
         [AllowAnonymous]
-        [HttpPost("SingUp")]
+        [HttpPost("SignUp")]
         public async Task<ActionResult> PostUtilizador([FromBody] UtilizadorCreateDTO dto)
         {
             try
             {
-
                 if (await _context.Utilizadores.AnyAsync(t => t.CPF == dto.CPF))
-                {
                     return BadRequest($"O CPF {dto.CPF} informado já existe.");
-                }
-
-                //Validar informações
-
-                var ultimoId = await _context.Utilizadores.OrderByDescending(x => x.IdUtilizador).Select(x => x.IdUtilizador).FirstOrDefaultAsync();
+                if (await _context.Utilizadores.AnyAsync(t => t.Email == dto.Email))
+                    return BadRequest($"O Email {dto.Email} informado já existe.");
+                if (await _context.Utilizadores.AnyAsync(t => t.Username == dto.Username))
+                    return BadRequest($"O Username {dto.Username} informado já existe.");
+                if (await _context.Utilizadores.AnyAsync(t => t.Telefone == dto.Telefone))
+                    return BadRequest($"O Telefone {dto.Telefone} informado já existe.");
 
                 Criptografia.CriarPasswordHash(dto.SenhaString, out byte[] hash, out byte[] salt);
 
-                var u = new Utilizador();
-
-                u.IdUtilizador = ultimoId + 1;
-                u.CPF = dto.CPF;
-                u.Nome = dto.Nome;
-                u.Sobrenome = dto.Sobrenome;
-                u.DtNascimento = dto.DtNascimento;
-                u.Email = dto.Email;
-                u.Telefone = dto.Telefone;
-                u.Username = dto.Username;
-                u.SenhaHash = hash;
-                u.SenhaSalt = salt;
+                var u = new Utilizador
+                {
+                    CPF = dto.CPF,
+                    Nome = dto.Nome,
+                    Sobrenome = dto.Sobrenome,
+                    DtNascimento = dto.DtNascimento,
+                    Email = dto.Email,
+                    Telefone = dto.Telefone,
+                    Username = dto.Username,
+                    SenhaHash = hash,
+                    SenhaSalt = salt
+                };
 
                 _context.Utilizadores.Add(u);
                 await _context.SaveChangesAsync();
 
-                var ut = new UtilizadorTipoUtilizador();
-                ut.IdUtilizador = u.IdUtilizador;
-                ut.IdTipoUtilizador = 2;
+
+                var ut = new UtilizadorTipoUtilizador
+                {
+                    IdUtilizador = u.IdUtilizador,
+                    IdTipoUtilizador = 2
+                };
+
 
                 _context.UtilizadoresTiposUtilizadores.Add(ut);
                 await _context.SaveChangesAsync();
 
                 return CreatedAtAction(nameof(GetUtilizador), new { id = u.IdUtilizador }, u);
+
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Erro ao criar item: {ex.Message}");
+                return StatusCode(500, $"Erro ao criar Utilizador: {ex.Message}");
             }
         }
+
         #endregion
-        #region POST2
-        [AllowAnonymous]
-        [HttpPost("SingUp2")]
-        public async Task<ActionResult> PostUtilizador2([FromBody] UtilizadorCreateDTO dto)
-        {
-            try
-            {
 
-                if (await _context.Utilizadores.AnyAsync(t => t.CPF == dto.CPF))
-                {
-                    return BadRequest($"O CPF {dto.CPF} informado já existe.");
-                }
-
-                //Validar informações
-
-                var ultimoId = await _context.Utilizadores.OrderByDescending(x => x.IdUtilizador).Select(x => x.IdUtilizador).FirstOrDefaultAsync();
-
-                Criptografia.CriarPasswordHash(dto.SenhaString, out byte[] hash, out byte[] salt);
-
-                var u = new Utilizador();
-
-                u.IdUtilizador = ultimoId + 1;
-                u.CPF = dto.CPF;
-                u.Nome = dto.Nome;
-                u.Sobrenome = dto.Sobrenome;
-                u.DtNascimento = dto.DtNascimento;
-                u.Email = dto.Email;
-                u.Telefone = dto.Telefone;
-                u.Username = dto.Username;
-                u.SenhaHash = hash;
-                u.SenhaSalt = salt;
-
-                _context.Utilizadores.Add(u);
-                await _context.SaveChangesAsync();
-
-                return CreatedAtAction(nameof(GetUtilizador), new { id = u.IdUtilizador }, u);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Erro ao criar item: {ex.Message}");
-            }
-        }
-        #endregion
         #region PUT
         [HttpPut("Update")]
         public async Task<ActionResult> PutAsync([FromBody] UtilizadorUpdateDTO dto)
@@ -281,12 +244,12 @@ namespace Medicare_API.Controllers
                 utilizador.Username = dto.Username;
 
                 // Atualiza a senha (caso venha uma nova senha no DTO)
-                if (!string.IsNullOrWhiteSpace(dto.SenhaString))
+                /*if (!string.IsNullOrWhiteSpace(dto.SenhaString))
                 {
                     Criptografia.CriarPasswordHash(dto.SenhaString, out byte[] hash, out byte[] salt);
                     utilizador.SenhaHash = hash;
                     utilizador.SenhaSalt = salt;
-                }
+                }*/
 
                 _context.Utilizadores.Update(utilizador);
                 await _context.SaveChangesAsync();

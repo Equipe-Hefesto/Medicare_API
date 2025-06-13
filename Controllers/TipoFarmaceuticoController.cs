@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Medicare_API.Controllers
 {
-    [Authorize]
+   
     [Route("[controller]")]
     public class TipoFarmaceuticoController : Controller
     {
@@ -20,8 +20,7 @@ namespace Medicare_API.Controllers
 
         #region GET
         [HttpGet]
-        [Authorize(Roles = "ADMIN")]
-        [Authorize(Roles = "AMIGO_MEDICARE")]
+        
         public async Task<ActionResult<IEnumerable<TipoFarmaceutico>>> GetAllTipos()
         {
             try
@@ -41,7 +40,7 @@ namespace Medicare_API.Controllers
 
         #region GET {id}
         [HttpGet("{id}")]
-        [Authorize(Roles = "ADMIN")]
+        
         public async Task<ActionResult<TipoFarmaceutico>> GetTipoPorId(int id)
         {
             try
@@ -61,7 +60,6 @@ namespace Medicare_API.Controllers
 
         #region POST
         [HttpPost]
-        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> PostTipo([FromBody] TipoCreateDTO dto)
         {
             try
@@ -91,7 +89,6 @@ namespace Medicare_API.Controllers
 
         #region PUT
         [HttpPut("{id}")]
-        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> PutTipo(int id, [FromBody] TipoUpdateDTO dto)
         {
             try
@@ -119,7 +116,6 @@ namespace Medicare_API.Controllers
 
         #region DELETE
         [HttpDelete("{id}")]
-        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> DeleteTipo(int id)
         {
             try
