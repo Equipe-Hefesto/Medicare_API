@@ -7,6 +7,8 @@ using Medicare_API.Models;
 using Medicare_API.Models.DTOs;
 using Medicare_API.Models.Utils;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -22,10 +24,80 @@ namespace Medicare_API.Controllers
         private readonly DataContext _context;
         private readonly IConfiguration _configuration;
 
-        public UtilizadorController(DataContext context, IConfiguration configuration)
+        private readonly IEmailSender _emailSender;
+
+        [AllowAnonymous]
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            var user = await _context.Utilizadores.FirstOrDefaultAsync(u => u.Email == request.Email);
+            if (user == null)
+                return Ok(); // Evita revelar se o email existe
+
+            // Gera token e define validade (30m)
+            var token = Guid.NewGuid().ToString();
+            var expiration = DateTime.UtcNow.AddMinutes(30);
+
+            user.PasswordResetToken = token;
+            user.PasswordResetTokenExpiration = expiration;
+
+            await _context.SaveChangesAsync();
+
+            var webLink = $"https://equipe-hefesto.github.io/reset.html?email={Uri.EscapeDataString(user.Email)}&token={Uri.EscapeDataString(token)}&expirration={Uri.EscapeDataString(expiration.ToString("o"))}";
+
+            var message = $@"
+                <p>Você solicitou a redefinição de senha.</p>
+                <p>Clique no botão abaixo para abrir o app:</p>
+                <a href='{webLink}' style='
+                display: inline-block;
+                padding: 12px 24px;
+                background-color: #2e86de;
+                co  lor: white;
+                text-decoration: none;
+                border-radius: 6px;
+                font-weight: bold;'>Redefinir Senha</a>
+                <p>Se você não solicitou, ignore este e-mail.</p>";
+
+            await _emailSender.SendEmailAsync(user.Email, "Redefinição de senha", message);
+
+            return Ok();
+        }
+
+
+        [AllowAnonymous]
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            var user = await _context.Utilizadores.FirstOrDefaultAsync(u =>
+                u.Email == request.Email &&
+                u.PasswordResetToken == request.Token &&
+                u.PasswordResetTokenExpiration > DateTime.UtcNow);
+
+            if (user == null)
+                return BadRequest("Token inválido ou expirado.");
+
+            // Cria salt e hash da nova senha
+            using var hmac = new System.Security.Cryptography.HMACSHA512();
+            user.SenhaSalt = hmac.Key;
+            user.SenhaHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(request.NewPassword));
+
+            // Invalida o token
+            user.PasswordResetToken = null;
+            user.PasswordResetTokenExpiration = null;
+
+            await _context.SaveChangesAsync();
+
+            return Ok("Senha redefinida com sucesso.");
+        }
+
+
+
+
+        public UtilizadorController(DataContext context, IConfiguration configuration, IEmailSender emailSender)
         {
             _context = context;
             _configuration = configuration;
+            _emailSender = emailSender;
         }
 
         #region GET
@@ -91,6 +163,56 @@ namespace Medicare_API.Controllers
         [AllowAnonymous]
         [HttpPost("SingUp")]
         public async Task<ActionResult> PostUtilizador([FromBody] UtilizadorCreateDTO dto)
+        {
+            try
+            {
+
+                if (await _context.Utilizadores.AnyAsync(t => t.CPF == dto.CPF))
+                {
+                    return BadRequest($"O CPF {dto.CPF} informado já existe.");
+                }
+
+                //Validar informações
+
+                var ultimoId = await _context.Utilizadores.OrderByDescending(x => x.IdUtilizador).Select(x => x.IdUtilizador).FirstOrDefaultAsync();
+
+                Criptografia.CriarPasswordHash(dto.SenhaString, out byte[] hash, out byte[] salt);
+
+                var u = new Utilizador();
+
+                u.IdUtilizador = ultimoId + 1;
+                u.CPF = dto.CPF;
+                u.Nome = dto.Nome;
+                u.Sobrenome = dto.Sobrenome;
+                u.DtNascimento = dto.DtNascimento;
+                u.Email = dto.Email;
+                u.Telefone = dto.Telefone;
+                u.Username = dto.Username;
+                u.SenhaHash = hash;
+                u.SenhaSalt = salt;
+
+                _context.Utilizadores.Add(u);
+                await _context.SaveChangesAsync();
+
+                var ut = new UtilizadorTipoUtilizador();
+                ut.IdUtilizador = u.IdUtilizador;
+                ut.IdTipoUtilizador = 2;
+
+                _context.UtilizadoresTiposUtilizadores.Add(ut);
+                await _context.SaveChangesAsync();
+
+                return CreatedAtAction(nameof(GetUtilizador), new { id = u.IdUtilizador }, u);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Erro ao criar item: {ex.Message}");
+            }
+        }
+        #endregion
+        #region POST2
+        [AllowAnonymous]
+        [HttpPost("SingUp2")]
+        public async Task<ActionResult> PostUtilizador2([FromBody] UtilizadorCreateDTO dto)
         {
             try
             {
@@ -193,7 +315,7 @@ namespace Medicare_API.Controllers
                 if (!int.TryParse(userString, out int userId))
                 {
                     return Unauthorized("Token Invalido");
-                } 
+                }
 
                 var utilizador = await _context.Utilizadores.FirstOrDefaultAsync(x => x.IdUtilizador == userId);
                 if (utilizador == null)
@@ -309,5 +431,59 @@ namespace Medicare_API.Controllers
         }
 
         #endregion
+
+
+        #region ValidarCpf
+
+        [AllowAnonymous]
+        [HttpPost("validar-cpf")]
+        public async Task<IActionResult> ValidarCpf([FromBody] ValidarCpfDTO dto)
+        {
+            try
+            {
+                bool existe = await _context.Utilizadores
+                    .AnyAsync(x => x.CPF.ToLower() == dto.CPF.ToLower());
+
+                return Ok(new { existe });
+            }
+            catch (Exception ex)
+            {
+                var mensagemErro = ex.InnerException != null
+                    ? $"{ex.Message} - {ex.InnerException.Message}"
+                    : ex.Message;
+
+                return BadRequest(new { erro = mensagemErro });
+            }
+        }
+
+
+        #endregion
+
+        #region ValidarEmail
+
+        [AllowAnonymous]
+        [HttpPost("validar-email")]
+        public async Task<IActionResult> ValidarEmail([FromBody] ValidarEmailDTO dto)
+        {
+            try
+            {
+                bool existe = await _context.Utilizadores
+                    .AnyAsync(x => x.Email.ToLower() == dto.Email.ToLower());
+
+                return Ok(new { existe });
+            }
+            catch (Exception ex)
+            {
+                var mensagemErro = ex.InnerException != null
+                    ? $"{ex.Message} - {ex.InnerException.Message}"
+                    : ex.Message;
+
+                return BadRequest(new { erro = mensagemErro });
+            }
+        }
+
+
+        #endregion
+
     }
 }

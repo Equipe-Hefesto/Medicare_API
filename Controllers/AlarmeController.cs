@@ -21,8 +21,8 @@ namespace Medicare_API.Controllers
             _context = context;
         }
 
-        #region GET
-        [HttpGet("GetAll")]
+        #region GET All
+        [HttpGet]
         [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<IEnumerable<Alarme>>> GetAllAlarmes()
         {
@@ -31,7 +31,6 @@ namespace Medicare_API.Controllers
                 var alarmes = await _context.Alarmes.ToListAsync();
                 if (alarmes == null || alarmes.Count == 0)
                     return NotFound();
-
                 return Ok(alarmes);
             }
             catch (Exception ex)
@@ -41,9 +40,9 @@ namespace Medicare_API.Controllers
         }
         #endregion
 
-        #region GET {id}
-        [HttpGet("utilizador")]
-        public async Task<ActionResult<IEnumerable<Alarme>>> GetAlarmePorId()
+        #region GET por Id
+        [HttpGet("{id}")]
+        public async Task<ActionResult<AlarmeCompletoDTO>> GetAlarmePorId(int id)
         {
             try
             {
@@ -54,19 +53,93 @@ namespace Medicare_API.Controllers
                                 from a in _context.Alarmes
                                 join p in _context.Posologias on a.IdPosologia equals p.IdPosologia
                                 join r in _context.Remedios on p.IdRemedio equals r.IdRemedio
-                                where p.IdUtilizador == userId
-                                select new AlarmeComRemedioDTO
+                                join s in _context.Sonecas on p.IdPosologia equals s.IdPosologia
+                                where p.IdUtilizador == userId && a.IdAlarme == id
+                                select new AlarmeAgendarDTO
                                 {
+                                    NomeRemedio = r.Nome,
                                     Alarme = a,
-                                    NomeRemedio = r.Nome
-                                }
+                                    Dose = $"{p.QtdeDose} {GetTipoFarmaceutico(p.IdTipoFarmaceutico)} de {p.QtdeConcentracao} {GetTipoGrandeza(p.IdTipoGrandeza)} de {GetNomeRemedio(p.IdRemedio)}",
+                                    Observacao = $"{p.Observacao}",
+                                    Soneca = s
 
-                            ).ToListAsync();
+                                }).FirstOrDefaultAsync();
 
-                //var alarme = await _context.Alarmes.FindAsync(id);
                 if (alarme == null)
                     return NotFound();
+                return Ok(alarme);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Erro interno: {ex.Message}");
+            }
+        }
+        #endregion
 
+        #region GET lista-agendar
+        [HttpGet("lista-agendar")]
+        public async Task<ActionResult<IEnumerable<Alarme>>> GetListaAgendarAlarme()
+        {
+            try
+            {
+                var userId = User.GetUserId();
+                if (userId == 0) return Unauthorized();
+
+                var alarme = await (
+                                from a in _context.Alarmes
+                                join p in _context.Posologias on a.IdPosologia equals p.IdPosologia
+                                join r in _context.Remedios on p.IdRemedio equals r.IdRemedio
+                                join s in _context.Sonecas on p.IdPosologia equals s.IdPosologia
+                                where p.IdUtilizador == userId
+                                select new AlarmeAgendarDTO
+                                {
+                                    NomeRemedio = r.Nome,
+                                    Alarme = a,
+                                    Dose = $"{p.QtdeDose} {GetTipoFarmaceutico(p.IdTipoFarmaceutico)} de {p.QtdeConcentracao} {GetTipoGrandeza(p.IdTipoGrandeza)} de {GetNomeRemedio(p.IdRemedio)}",
+                                    Observacao = $"{p.Observacao}",
+                                    Soneca = s
+
+                                }).ToListAsync();
+
+                if (alarme == null)
+                    return NotFound();
+                return Ok(alarme);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Erro interno: {ex.Message}");
+            }
+        }
+        #endregion
+
+        #region GET lista-completa
+        [HttpGet("lista-completa")]
+        public async Task<ActionResult<IEnumerable<Alarme>>> GetListaCompletaAlarme()
+        {
+            try
+            {
+                var userId = User.GetUserId();
+                if (userId == 0) return Unauthorized();
+
+                var alarme = await (
+                                from a in _context.Alarmes
+                                join p in _context.Posologias on a.IdPosologia equals p.IdPosologia
+                                join r in _context.Remedios on p.IdRemedio equals r.IdRemedio
+                                join s in _context.Sonecas on p.IdPosologia equals s.IdPosologia
+                                where p.IdUtilizador == userId
+                                select new AlarmeCompletoDTO
+                                {
+                                    NomeRemedio = r.Nome,
+                                    Alarme = a,
+                                    Dose = $"{p.QtdeDose} {GetTipoFarmaceutico(p.IdTipoFarmaceutico)}",
+                                    Concentracao = $"{p.QtdeConcentracao} {GetTipoGrandeza(p.IdTipoGrandeza)}",
+                                    Observacao = $"{p.Observacao}",
+                                    Soneca = s,
+                                    Frequencia = $"{GetTipoAgendamento(p.IdTipoAgendamento)} | {GetHorarios(p.IdPosologia)}"
+                                }).ToListAsync();
+
+                if (alarme == null)
+                    return NotFound();
                 return Ok(alarme);
             }
             catch (Exception ex)
@@ -78,38 +151,30 @@ namespace Medicare_API.Controllers
 
         #region POST
         [HttpPost]
-        public async Task<ActionResult> PostAlarme([FromBody] AlarmeCreateDTO dto)
+        public async Task<ActionResult> PostAlarme([FromBody] AlarmeDTO dto)
         {
             try
             {
+                var userString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+                if (!int.TryParse(userString, out int userId)) return Unauthorized();
+
+                var posologia = await _context.Posologias.FirstOrDefaultAsync(p => p.IdPosologia == dto.IdPosologia && p.IdUtilizador == userId);
+                if (posologia == null)
+                {
+                    return Forbid("Você não tem permissão para adicionar alarmes a essa posologia.");
+                }
                 if (await _context.Alarmes.AnyAsync(a => a.IdPosologia == dto.IdPosologia && a.DataHora == dto.DataHora))
                 {
                     return BadRequest($"O Alarme da Posologia  {dto.IdPosologia} das {dto.DataHora} informado já existe.");
                 }
 
-                var userString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-                if (!int.TryParse(userString, out int userId))
+                var a = new Alarme
                 {
-                    return Unauthorized();
-                }
-
-                var posologia = await _context.Posologias.FirstOrDefaultAsync(p => p.IdPosologia == dto.IdPosologia && p.IdUtilizador == userId);
-
-                if (posologia == null)
-                {
-                    return Forbid("Você não tem permissão para adicionar alarmes a essa posologia.");
-                }
-
-                var ultimoId = await _context.Alarmes.OrderByDescending(x => x.IdAlarme).Select(x => x.IdAlarme).FirstOrDefaultAsync();
-
-                var a = new Alarme();
-                a.IdAlarme = ultimoId + 1;
-                a.IdPosologia = dto.IdPosologia;
-                a.Descricao = dto.Descricao;
-                a.DataHora = dto.DataHora;
-                a.Status = "A";
-                a.Posologia = posologia;
+                    IdPosologia = dto.IdPosologia,
+                    DataHora = dto.DataHora,
+                    Status = "P"
+                };
 
                 _context.Alarmes.Add(a);
                 await _context.SaveChangesAsync();
@@ -125,30 +190,28 @@ namespace Medicare_API.Controllers
 
         #region PUT
         [HttpPut("{id}")]
-
-        public async Task<ActionResult> PutAlarme(int id, [FromBody] AlarmeUpdateDTO dto)
+        public async Task<ActionResult> PutAlarme(int id, [FromBody] AlarmeDTO dto)
         {
             try
             {
-
                 var userString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-                if (!int.TryParse(userString, out int userId))
-
-                    if (!await _context.Alarmes.AnyAsync(a => a.IdPosologia == dto.IdPosologia && a.DataHora == dto.DataHora))
-                    {
-                        return BadRequest($"O Alarme da Posologia {dto.IdPosologia} das {dto.DataHora} informado já existe.");
-                    }
+                if (!int.TryParse(userString, out int userId)) return Unauthorized();
 
                 var posologia = await _context.Posologias.FirstOrDefaultAsync(p => p.IdPosologia == dto.IdPosologia && p.IdUtilizador == userId);
+                if (posologia == null)
+                {
+                    return Forbid("Você não tem permissão para alterar alarmes dessa posologia.");
+                }
+                var a = await _context.Alarmes.FirstOrDefaultAsync(a => a.IdAlarme == id && a.IdPosologia == dto.IdPosologia);
+                if (a == null)
+                {
+                    return NotFound($"O alarme de ID {id} não foi encontrado.");
+                }
 
-                var a = new Alarme();
-                a.IdAlarme = dto.IdAlarme;
                 a.IdPosologia = dto.IdPosologia;
-                a.Descricao = dto.Descricao;
                 a.DataHora = dto.DataHora;
-                a.Status = "A";
-                a.Posologia = posologia;
+                a.Status = dto.Status;
 
                 _context.Alarmes.Update(a);
                 await _context.SaveChangesAsync();
@@ -162,25 +225,25 @@ namespace Medicare_API.Controllers
         }
         #endregion
 
+        #region PUT status
         [HttpPut("status/{id}")]
-        public async Task<ActionResult> AtualizarStatusAlarme(int id, [FromBody] AlarmeStatusUpdateDTO dto)
+        public async Task<ActionResult> AtualizarStatusAlarme(int id, [FromBody] AlarmeStatusDTO dto)
         {
             try
             {
                 var userString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (!int.TryParse(userString, out int userId))
-                    return Unauthorized();
 
-                var alarme = await _context.Alarmes
-                    .Include(a => a.Posologia)
-                    .FirstOrDefaultAsync(a => a.IdAlarme == id && a.Posologia.IdUtilizador == userId);
+                if (!int.TryParse(userString, out int userId)) return Unauthorized();
 
-                if (alarme == null)
-                    return NotFound();
+                var a = await _context.Alarmes.Include(a => a.Posologia).FirstOrDefaultAsync(a => a.IdAlarme == id && a.Posologia!.IdUtilizador == userId);
+                if (a == null)
+                {
+                    return NotFound($"O alarme de ID {id} não foi encontrado.");
+                }
 
-                alarme.Status = dto.Status;
+                a.Status = dto.Status;
 
-                _context.Alarmes.Update(alarme);
+                _context.Alarmes.Update(a);
                 await _context.SaveChangesAsync();
 
                 return NoContent();
@@ -190,6 +253,39 @@ namespace Medicare_API.Controllers
                 return StatusCode(500, $"Erro ao atualizar status: {ex.Message}");
             }
         }
+        #endregion
+
+        #region PUT contador
+        [HttpPut("contador/{id}")]
+        public async Task<ActionResult> AtualizarContadorAlarme(int id, [FromBody] AlarmeContadorDTO dto)
+        {
+            try
+            {
+                var userString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+                if (!int.TryParse(userString, out int userId)) return Unauthorized();
+
+                var a = await _context.Alarmes.Include(a => a.Posologia).FirstOrDefaultAsync(a => a.IdAlarme == id && a.Posologia!.IdUtilizador == userId);
+                if (a == null)
+                {
+                    return NotFound($"O alarme de ID {id} não foi encontrado.");
+                }
+
+                a.DataHora = dto.DataHora;
+                a.ContadorSoneca = dto.ContadorSoneca;
+                a.Status = "S";
+
+                _context.Alarmes.Update(a);
+                await _context.SaveChangesAsync();
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Erro ao atualizar status: {ex.Message}");
+            }
+        }
+        #endregion
 
 
         #region DELETE
@@ -213,6 +309,34 @@ namespace Medicare_API.Controllers
             {
                 return StatusCode(500, $"Erro ao deletar item: {ex.Message}");
             }
+        }
+        #endregion
+
+        #region Adicionais
+        private string GetNomeRemedio(int idRemedio)
+        {
+            return _context.Remedios.Find(idRemedio)?.Nome ?? "Medicamento";
+        }
+        private string GetTipoFarmaceutico(int IdTipoFarmaceutico)
+        {
+            return _context.TiposFarmaceutico.Find(IdTipoFarmaceutico)?.Descricao ?? "Tipo Farmaceutico";
+        }
+        private string GetTipoGrandeza(int IdTipoGrandeza)
+        {
+            return _context.TiposGrandeza.Find(IdTipoGrandeza)?.Descricao ?? "Tipo Gradeza";
+        }
+        private string GetTipoAgendamento(int IdTipoAgendamento)
+        {
+            return _context.TiposAgendamento.Find(IdTipoAgendamento)?.Descricao ?? "Tipo Agendamento";
+        }
+        private string GetHorarios(int idPosologia)
+        {
+            var horarios = _context.Horarios
+                .Where(h => h.IdPosologia == idPosologia)
+                .Select(h => h.Hora.ToString(@"hh\:mm"))
+                .ToList();
+
+            return horarios.Any() ? string.Join(", ", horarios) : "Horarios";
         }
         #endregion
     }

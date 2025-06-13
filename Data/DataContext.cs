@@ -24,6 +24,8 @@ namespace Medicare_API.Data
             public DbSet<Promocao> Promocoes { get; set; }
 
             public DbSet<SolicitacoesVinculo> SolicitacoesVinculos { get; set; }
+            public DbSet<Soneca> Sonecas { get; set; }
+
 
             public DataContext(DbContextOptions<DataContext> options) : base(options)
             {
@@ -229,10 +231,11 @@ namespace Medicare_API.Data
                   modelBuilder.Entity<TipoGrandeza>(entity =>
                   {
                         entity.ToTable("TiposGrandeza");
+
                         entity.HasKey(e => e.IdTipoGrandeza);
 
                         entity.Property(e => e.IdTipoGrandeza)
-                              .ValueGeneratedNever();
+                              .ValueGeneratedOnAdd();
 
                         entity.Property(e => e.Descricao)
                               .HasColumnName("dsGrandeza")
@@ -245,10 +248,11 @@ namespace Medicare_API.Data
                   modelBuilder.Entity<TipoFarmaceutico>(entity =>
                   {
                         entity.ToTable("TiposFarmaceutico");
+
                         entity.HasKey(e => e.IdTipoFarmaceutico);
 
                         entity.Property(e => e.IdTipoFarmaceutico)
-                              .ValueGeneratedNever();
+                              .ValueGeneratedOnAdd();
 
                         entity.Property(e => e.Descricao)
                               .HasColumnName("decricao")
@@ -261,10 +265,11 @@ namespace Medicare_API.Data
                   modelBuilder.Entity<TipoAgendamento>(entity =>
                   {
                         entity.ToTable("TiposAgendamento");
+
                         entity.HasKey(e => e.IdTipoAgendamento);
 
                         entity.Property(e => e.IdTipoAgendamento)
-                              .ValueGeneratedNever();
+                              .ValueGeneratedOnAdd();
 
                         entity.Property(e => e.Descricao)
                               .HasMaxLength(40)
@@ -276,14 +281,26 @@ namespace Medicare_API.Data
                   modelBuilder.Entity<Remedio>(entity =>
                   {
                         entity.ToTable("Remedios");
+
                         entity.HasKey(e => e.IdRemedio);
 
                         entity.Property(e => e.IdRemedio)
-                              .ValueGeneratedNever();
+                              .ValueGeneratedOnAdd();
 
-                        entity.Property(e => e.Nome).HasColumnName("nmRemedio").HasMaxLength(40).IsRequired();
-                        entity.Property(e => e.DataCriacao).HasColumnName("dcRemedio").IsRequired();
-                        entity.Property(e => e.DataAtualizacao).HasColumnName("duRemedio").IsRequired();
+                        entity.Property(e => e.Nome)
+                              .HasMaxLength(100)
+                              .IsRequired();
+
+                        entity.Property(e => e.DataCriacao)
+                              .IsRequired();
+
+                        entity.Property(e => e.DataAtualizacao)
+                              .IsRequired();
+
+                        entity.HasMany(e => e.Promocoes)
+                              .WithOne(p => p.Remedio)
+                              .HasForeignKey(p => p.IdRemedio)
+                              .OnDelete(DeleteBehavior.Cascade);
                   });
 
                   #endregion
@@ -292,25 +309,74 @@ namespace Medicare_API.Data
                   modelBuilder.Entity<Posologia>(entity =>
                   {
                         entity.ToTable("Posologias");
+
                         entity.HasKey(e => e.IdPosologia);
 
                         entity.Property(e => e.IdPosologia)
-                              .ValueGeneratedNever();
+                              .ValueGeneratedOnAdd();
 
-                        entity.Property(e => e.Quantidade).HasColumnName("qtdePosologia").IsRequired();
-                        entity.Property(e => e.QuantidadeDose).HasColumnName("qtdeDose").IsRequired();
-                        entity.Property(e => e.DataInicio).HasColumnName("diPosologia").IsRequired();
-                        entity.Property(e => e.DataFim).HasColumnName("dfPosologia").IsRequired();
-                        entity.Property(e => e.Intervalo).HasColumnName("intervalo").IsRequired();
-                        entity.Property(e => e.DiasSemana).HasColumnName("diasSemana").HasMaxLength(16).IsRequired();
-                        entity.Property(e => e.DiasUso).HasColumnName("diasUso").IsRequired();
-                        entity.Property(e => e.DiasPausa).HasColumnName("diasPausa").IsRequired();
+                        entity.Property(e => e.QtdeDose)
+                              .HasColumnName("qtdeDose")
+                              .IsRequired();
 
-                        entity.HasOne(p => p.Remedio).WithMany().HasForeignKey(p => p.IdRemedio);
-                        entity.HasOne(p => p.Utilizador).WithMany().HasForeignKey(p => p.IdUtilizador);
-                        entity.HasOne(p => p.TipoFarmaceutico).WithMany().HasForeignKey(p => p.IdTipoFarmaceutico);
-                        entity.HasOne(p => p.TipoGrandeza).WithMany().HasForeignKey(p => p.IdTipoGrandeza);
-                        entity.HasOne(p => p.TipoAgendamento).WithMany().HasForeignKey(p => p.IdTipoAgendamento);
+                        entity.Property(e => e.QtdeConcentracao)
+                              .HasColumnName("qtdeConcentracao")
+                              .IsRequired();
+
+                        entity.Property(e => e.DataInicio)
+                              .HasColumnName("dtInicio")
+                              .IsRequired();
+
+                        entity.Property(e => e.DataFim)
+                              .HasColumnName("dtFim")
+                              .IsRequired();
+
+                        entity.Property(e => e.Intervalo)
+                              .HasColumnName("intervalo")
+                              .HasMaxLength(20);
+
+                        entity.Property(e => e.DiasSemana)
+                              .HasColumnName("diasSemana")
+                              .HasMaxLength(16)
+                              .IsRequired();
+
+                        entity.Property(e => e.DiasUso)
+                              .HasColumnName("diasUso")
+                              .IsRequired();
+
+                        entity.Property(e => e.DiasPausa)
+                              .HasColumnName("diasPausa")
+                              .IsRequired();
+
+                        entity.Property(e => e.Observacao)
+                              .HasColumnName("observacao")
+                              .HasMaxLength(255);
+
+                        // Relacionamentos via FK
+                        entity.HasOne<Remedio>()
+                              .WithMany()
+                              .HasForeignKey(p => p.IdRemedio)
+                              .OnDelete(DeleteBehavior.Restrict);
+
+                        entity.HasOne<Utilizador>()
+                              .WithMany()
+                              .HasForeignKey(p => p.IdUtilizador)
+                              .OnDelete(DeleteBehavior.Restrict);
+
+                        entity.HasOne<TipoFarmaceutico>()
+                              .WithMany()
+                              .HasForeignKey(p => p.IdTipoFarmaceutico)
+                              .OnDelete(DeleteBehavior.Restrict);
+
+                        entity.HasOne<TipoGrandeza>()
+                              .WithMany()
+                              .HasForeignKey(p => p.IdTipoGrandeza)
+                              .OnDelete(DeleteBehavior.Restrict);
+
+                        entity.HasOne<TipoAgendamento>()
+                              .WithMany()
+                              .HasForeignKey(p => p.IdTipoAgendamento)
+                              .OnDelete(DeleteBehavior.Restrict);
                   });
                   #endregion
 
@@ -319,7 +385,7 @@ namespace Medicare_API.Data
                   {
                         entity.ToTable("Horarios");
 
-                        entity.HasKey(e => new { e.IdPosologia, e.Hora }); // Corrigido
+                        entity.HasKey(e => new { e.IdPosologia, e.Hora });
 
                         entity.Property(e => e.IdPosologia)
                               .IsRequired()
@@ -332,24 +398,87 @@ namespace Medicare_API.Data
 
                         entity.HasOne(h => h.Posologia)
                               .WithMany(p => p.Horarios)
-                              .HasForeignKey(h => h.IdPosologia);
+                              .HasForeignKey(h => h.IdPosologia)
+                              .OnDelete(DeleteBehavior.Cascade);
                   });
                   #endregion
 
                   #region Alarmes
+
                   modelBuilder.Entity<Alarme>(entity =>
                   {
                         entity.ToTable("Alarmes");
+
                         entity.HasKey(e => e.IdAlarme);
 
                         entity.Property(e => e.IdAlarme)
-                              .ValueGeneratedNever();
+                              .ValueGeneratedOnAdd();
 
-                        entity.Property(e => e.DataHora).HasColumnName("dtHoraAlarme").IsRequired();
-                        entity.Property(e => e.Descricao).HasColumnName("dsAlarme").HasMaxLength(40).IsRequired();
-                        entity.Property(e => e.Status).HasColumnName("stAlarme").HasMaxLength(1).IsRequired();
+                        entity.Property(e => e.ContadorSoneca)
+                              .HasColumnName("ContadorSoneca")
+                              .HasColumnType("char(1)")
+                              .HasDefaultValue(0)
+                              .IsRequired();
 
-                        entity.HasOne(a => a.Posologia).WithMany().HasForeignKey(a => a.IdPosologia);
+                        entity.Property(e => e.DataHora)
+                              .HasColumnName("dtHoraAlarme")
+                              .HasColumnType("datetime")
+                              .IsRequired();
+
+                        entity.Property(e => e.Status)
+                              .HasColumnName("stAlarme")
+                              .HasColumnType("char(1)")
+                              .HasDefaultValue('P')
+                              .HasMaxLength(1)
+                              .IsRequired();
+
+                        entity.HasOne<Posologia>()
+                              .WithMany()
+                              .HasForeignKey(e => e.IdPosologia)
+                              .OnDelete(DeleteBehavior.Restrict)
+                              .HasConstraintName("FK_Alarmes_Posologia");
+                  });
+                  #endregion
+
+                  #region Sonecas
+                  modelBuilder.Entity<Soneca>(entity =>
+                  {
+                        entity.ToTable("Sonecas");
+
+                        entity.HasKey(e => e.IdPosologia); // Se for chave primária
+
+                        entity.Property(e => e.StSoneca)
+                              .HasColumnName("stSoneca")
+                              .HasColumnType("char(1)")
+                              .HasDefaultValue('A')
+                              .IsRequired();
+
+                        entity.Property(e => e.IntervaloMinutos)
+                              .HasColumnName("intervaloMinutos")
+                              .HasDefaultValue(5)
+                              .IsRequired();
+
+                        entity.Property(e => e.MaxSoneca)
+                              .HasColumnName("maxSoneca")
+                              .HasDefaultValue(3);
+
+                        entity.Property(e => e.DcSoneca)
+                              .HasColumnName("dcSoneca")
+                              .HasColumnType("datetime")
+                              .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                              .IsRequired();
+
+                        entity.Property(e => e.DuSoneca)
+                              .HasColumnName("duSoneca")
+                              .HasColumnType("datetime")
+                              .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                              .IsRequired();
+
+                        entity.HasOne(e => e.Posologia)
+                              .WithMany()
+                              .HasForeignKey(e => e.IdPosologia)
+                              .HasConstraintName("FK_Sonecas_2")
+                              .OnDelete(DeleteBehavior.Restrict); // Ou outro comportamento conforme a tua lógica
                   });
                   #endregion
 
@@ -419,6 +548,9 @@ namespace Medicare_API.Data
           .OnDelete(DeleteBehavior.Restrict);
                   });
                   #endregion
+
+
+
 
             }
       }

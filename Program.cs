@@ -5,66 +5,65 @@ using Medicare_API.Data;
 using Medicare_API.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.IdentityModel.Tokens;
-
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Registra o DataContext com o contêiner de serviços
+// 1. Registra o DataContext
 builder.Services.AddDbContext<DataContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("SomeeConnection")).EnableSensitiveDataLogging());
+    options.UseSqlServer(builder.Configuration.GetConnectionString("SomeeConnection"))
+           .EnableSensitiveDataLogging());
 
+// 2. Configura Identity
+//builder.Services.AddIdentity<Utilizador, IdentityRole<int>>()
+//  .AddEntityFrameworkStores<DataContext>()
+//.AddDefaultTokenProviders();
 
-// Outros serviços e configurações
-builder.Services.AddControllers();
+// 3. Configura envio de e-mails (se implementado)
+builder.Services.AddTransient<IEmailSender, EmailSender>();
 
-// Adiciona os serviços necessários para controllers
-builder.Services.AddControllers();
-
-// Configuração do Swagger (se estiver usando)
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
+// 4. Configura Serialização JSON
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
     });
 
+// 5. Configuração do JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            // Habilita a validação da chave de assinatura do token
             ValidateIssuerSigningKey = true,
-
-            // Define a chave de segurança usada para validar o token
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII
-            .GetBytes(builder.Configuration.GetSection("ConfiguracaoToken:Chave").Value!)),
-
-            // Desabilita a validação do emissor (Issuer), útil quando o backend não especifica um emissor fixo
+                .GetBytes(builder.Configuration["ConfiguracaoToken:Chave"]!)),
             ValidateIssuer = false,
-
-            // Desabilita a validação do público (Audience), permitindo que qualquer cliente utilize o token
             ValidateAudience = false
         };
     });
 
+// 6. Swagger
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// ---------------------------------------------------------------
 
 var app = builder.Build();
 
-// Habilita o Swagger
+// 7. Pipeline HTTP
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// Habilita o roteamento e mapeia as controllers
 app.UseRouting();
-app.UseAuthentication();
+app.UseAuthentication(); // JWT vem antes do Authorization
 app.UseAuthorization();
-app.MapControllers();  // Mapeia as controllers para que a API saiba qual caminho seguir
+
+app.MapControllers();
 
 app.Run();

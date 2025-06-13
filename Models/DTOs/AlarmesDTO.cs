@@ -5,29 +5,36 @@ using System.Threading.Tasks;
 
 namespace Medicare_API.Models.DTOs
 {
-    public class AlarmeCreateDTO
+    public class AlarmeDTO
     {
         public required int IdPosologia { get; set; }
         public required DateTime DataHora { get; set; }
-        public required string Descricao { get; set; } = null!;
         public required string Status { get; set; } = null!;
     }
-    public class AlarmeUpdateDTO
+
+    public class AlarmeAgendarDTO
     {
-        public required int IdAlarme { get; set; }
-        public required int IdPosologia { get; set; }
-        public required DateTime DataHora { get; set; }
-        public required string Descricao { get; set; } = null!;
-        public required string Status { get; set; } = null!;
-    }
-    public class AlarmeComRemedioDTO
-    {
-        public  Alarme? Alarme { get; set; }
-        public string? NomeRemedio { get; set; }
+        public required Alarme Alarme { get; set; }
+        public required string NomeRemedio { get; set; }
+        public required string Dose { get; set; }
+        public required string Observacao { get; set; }
+        public required Soneca Soneca { get; set; }
 
     }
-    public class AlarmeStatusUpdateDTO
-{
-    public required string Status { get; set; }
-}
+    public class AlarmeCompletoDTO : AlarmeAgendarDTO
+    {
+        public required string Frequencia { get; set; }
+        public required string Concentracao { get; set; }
+    }
+
+    public class AlarmeStatusDTO
+    {
+        public required string Status { get; set; }
+    }
+
+    public class AlarmeContadorDTO
+    {
+        public required DateTime DataHora { get; set; }
+        public int ContadorSoneca { get; set; }
+    }
 }

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Medicare_API.Data;
+using Microsoft.AspNetCore.Identity;
 
 namespace Medicare_API.Models
 {
@@ -22,7 +23,9 @@ namespace Medicare_API.Models
         public byte[]? SenhaSalt { get; set; } = null!;
         public string Username { get; set; } = null!;
         [NotMapped]
-        public string Token { get; set; } = string.Empty;
+        public string Token { get; set; } = string.Empty;        public string? PasswordResetToken { get; set; }
+
+        public DateTime? PasswordResetTokenExpiration { get; set; }
 
         [JsonIgnore]
         public List<UtilizadorTipoUtilizador> TiposUtilizadores { get; set; } = new();

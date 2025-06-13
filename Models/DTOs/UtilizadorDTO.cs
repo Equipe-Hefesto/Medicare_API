@@ -38,4 +38,31 @@ namespace Medicare_API.Models.DTOs
         public required string Email { get; set; }
         public required string SenhaString { get; set; }
     }
+
+    public class ValidarCpfDTO
+    {
+        public required string CPF { get; set; }
+
+    }
+
+    public class ValidarEmailDTO
+    {
+        public required string Email { get; set; }
+
+    }
+
+    public class ForgotPasswordRequest
+    {
+        public string Email { get; set; } = string.Empty;
+    }
+
+    public class ResetPasswordRequest
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Token { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
+    }
+
+
+
 }

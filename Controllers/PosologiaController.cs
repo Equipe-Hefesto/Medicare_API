@@ -85,7 +85,7 @@ namespace Medicare_API.Controllers
                                 join a in _context.Alarmes on p.IdPosologia equals a.IdPosologia
                                 join r in _context.Remedios on p.IdRemedio equals r.IdRemedio
                                 where p.IdUtilizador == userId
-                                group new { p, r, a } by new { p.IdPosologia, p,  Nome = r.Nome } into grp
+                                group new { p, r, a } by new { p.IdPosologia, p, Nome = r.Nome } into grp
                                 let ultimoAlarme = grp.OrderByDescending(x => x.a.DataHora).FirstOrDefault()
                                 select new PosologiaCompletaDTO
                                 {
@@ -138,7 +138,7 @@ namespace Medicare_API.Controllers
         }
         #endregion
 
-        
+
 
 
         #region POST
@@ -188,6 +188,14 @@ namespace Medicare_API.Controllers
 
 
                 _context.Posologias.Add(p);
+                await _context.SaveChangesAsync();
+
+                var soneca = new Soneca
+                {
+                    IdPosologia = p.IdPosologia,
+                };
+
+                _context.Sonecas.Add(soneca);
                 await _context.SaveChangesAsync();
 
 
@@ -427,7 +435,7 @@ namespace Medicare_API.Controllers
             a.IdPosologia = p.IdPosologia;
             a.Descricao = $"Tomar {p.Quantidade} {GetTipoFarmaceutico(p.IdTipoFarmaceutico)} de {p.QuantidadeDose} {GetTipoGrandeza(p.IdTipoGrandeza)} de {GetNomeRemedio(p.IdRemedio)}";
             a.DataHora = dtHora;
-            a.Status = "A";
+            a.Status = "P";
             a.Posologia = p;
 
             _context.Alarmes.Add(a);
