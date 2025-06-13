@@ -120,6 +120,7 @@ namespace Medicare_API.Controllers
                 soneca.IntervaloMinutos = dto.IntervaloMinutos;
                 soneca.MaxSoneca = dto.MaxSoneca;
                 soneca.DuSoneca = DateTime.Now;
+                soneca.StSoneca = dto.StSoneca;
 
                 _context.Sonecas.Update(soneca);
                 await _context.SaveChangesAsync();
